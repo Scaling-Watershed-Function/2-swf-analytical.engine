@@ -14,7 +14,7 @@
 # To run this code in macos it is necessary to install XQuartz from 
 #www.xquartz.org
 
-librarian::shelf(tidyverse)
+librarian::shelf(tidyverse,readr)
 set.seed(2703)
 
 #Data:
@@ -23,7 +23,12 @@ set.seed(2703)
 
 # PENDING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#values
+#Values
+#Importing data directly from online repository
+urlfile_1 = "https://raw.githubusercontent.com/Scaling-Watershed-Function/1-swf-knowledge.base/main/assets/data/raw/220725_yrb_resp_vars_legacy.csv?token=GHSAT0AAAAAAB7OSBWFLFNLYTMQQWED7BZAY77YB6Q"
+lgc_o <- read_csv(url(urlfile_1))
+
+
 lgc_o <- read.csv("1-swf-knowledge.base/assets/data/raw/220725_yrb_resp_vars_legacy.csv",stringsAsFactors = TRUE)
 spt_o <- read.csv("1-swf-knowledge.base/assets/data/raw/230110_yrb_spatial_camp.csv", stringsAsFactors = TRUE)
 rsp_o <- read.csv("1-swf-knowledge.base/assets/data/raw/230116_yrb_respt_vars.csv", stringsAsFactors = TRUE)
