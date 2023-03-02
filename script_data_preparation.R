@@ -20,19 +20,20 @@ librarian::shelf(tidyverse,
                  here)
 set.seed(2703)
 
-dat <- read_csv(here("assets","220725_yrb_resp_vars_legacy.csv"))
-
+#########################################################################################################
 # Import / Export of assets
 
 # Import: Repository path to raw data
 raw_data <- "https://raw.githubusercontent.com/Scaling-Watershed-Function/1-swf-knowledge.base/main/assets/data/raw/"
 
+
+#########################################################################################################
 # Local storage paths: to store locally first and then commit after all necessary
-# changes are implemented
+# changes are implemented. In this way we avoid modifying source files by accident.
 
-assets_data <- "/Users/fguerrero/Documents/GitHub/scaling-watershed-function/1-swf-knowledge.base/assets/data/processed/"
-assets_plot <- "/Users/fguerrero/Documents/GitHub/scaling-watershed-function/1-swf-knowledge.base/assets/plots/"
-
+assets_data <- "../1-swf-knowledge.base/assets/data/processed/"
+assets_plot <- "../1-swf-knowledge.base/assets/plots/"
+#########################################################################################################
 
 #Data:
 
@@ -156,6 +157,15 @@ hbc_m$hz_exchng <- 10^(hbc_m$hz_exchng)
 
 rsp_dat <- as_tibble(unique(merge(rsp_m1,hbc_m,by = "comid")))
 
+########################################################################################################
+#EXPORT FILE (local storage)
+
+write.csv(rsp_dat,file = paste0(assets_data,"230301_yrb_rsp_dat.csv"))
+
+########################################################################################################
+
+
+
 # Finally, let's merge the predicted data for the spatial study with all the 
 # contextual variables in rsp_dat
 
@@ -180,78 +190,17 @@ p <- ggplot(spt_dat,aes(wsd_are,rsp_locs))+
   geom_vline(xintercept = 325, linetype = "dashed")
 p
 
-# Let's now save these data sets for further analysis.
-
-# fname = "/Users/fguerrero/Documents/GitHub/scaling-watershed-function/1-swf-knowledge.base/assets/data/processed/"
-# flname = "230301_yrb_rsp_dat.csv"
-# a <- paste0(fname,flname)
+########################################################################################################
+#EXPORT FILE (local storage)
 
 write.csv(rsp_dat,file = paste0(assets_data,"230301_yrb_rsp_dat.csv"))
-write.csv(spt_dat,file = paste0(assets_data,"230301_yrb_spt_dat.csv"))
 
-################################################################################
-################################################################################
-# Scaling Analysis for Respiration Rates across the Willamette River Basin
-# DATA PREPARATION
-################################################################################
+########################################################################################################
 
-#By : Francisco Guerrero
-#Data source: SWAT-NEXXS Model simulations (By Kyongho Son)
 
-# Data
-sdb_dat0 <- readr::read_csv("https://raw.githubusercontent.com/Scaling-Watershed-Function/1-swf-knowledge.base/main/assets/data/raw/230117_yrb_hbgc_vars.csv",
-                show_col_types = FALSE)
 
-sdb_dat0 <- read.csv("1-swf-knowledge.base/assets/data/raw/nhd_WM_streamdatabase_annual_resp_mass_01162023.csv")
 
-# Let's subset this data using the same variables contained in the land use data set for 
-# the Yakima River Basin
 
-w_lnd <- sdb_dat0 %>% select(COMID,
-                             urban,
-                             forest,
-                             wetland,
-                             agrc,
-                             shrub,
-                             turban,
-                             tforest,
-                             twetland,
-                             tagrc,
-                             tshrub)
 
-# Let's rename the variables for consistency across data sets
-
-w_lnd <- rename(w_lnd,
-              comid = COMID,
-              urbn = urban,
-              frst = forest,
-              wtnd = wetland, 
-              shrb = shrub,
-              urbn_t = turban,
-              frst_t = tforest,
-              wtnd_t = twetland,
-              agrc_t = tagrc,
-              shrb_t = tshrub)
-
-# Saving as csv file
-write.csv(w_lnd,"1-swf-knowledge.base/assets/data/processed/230126_wlm_lndu_dat.csv")
-
-################################################################################
-# Hydro-Biogeochemical data
-################################################################################
-
-# NEXSS Model input/output data
-inp_dat <- read.csv("1-swf-knowledge.base/assets/data/raw/model_resp_annual_wm_input_output_df_01_16_2023.csv")
-
-# Cummulative Respiration data
-w_rsp_dat <- read.csv("1-swf-knowledge.base/assets/data/raw/cum_resp_WM_mass_data_0116_2023.csv")
-
-# Merging into a single data set
-wlm_dat0 <- unique(merge(w_rsp_dat,inp_dat,by="COMID"))
-
-# Defining variables to keep
-
-bgc_cln0 <- read.csv("1-swf-knowledge.base/assets/data/processed/230123_scaling_lnd_bgc.csv", 
-                     stringsAsFactors=TRUE)
 
 
