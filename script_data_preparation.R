@@ -14,8 +14,25 @@
 # To run this code in macos it is necessary to install XQuartz from 
 #www.xquartz.org
 
-librarian::shelf(tidyverse,readr)
+librarian::shelf(tidyverse,
+                 tidyr,
+                 readr,
+                 here)
 set.seed(2703)
+
+dat <- read_csv(here("assets","220725_yrb_resp_vars_legacy.csv"))
+
+# Import / Export of assets
+
+# Import: Repository path to raw data
+raw_data <- "https://raw.githubusercontent.com/Scaling-Watershed-Function/1-swf-knowledge.base/main/assets/data/raw/"
+
+# Local storage paths: to store locally first and then commit after all necessary
+# changes are implemented
+
+assets_data <- "/Users/fguerrero/Documents/GitHub/scaling-watershed-function/1-swf-knowledge.base/assets/data/processed/"
+assets_plot <- "/Users/fguerrero/Documents/GitHub/scaling-watershed-function/1-swf-knowledge.base/assets/plots/"
+
 
 #Data:
 
@@ -25,14 +42,11 @@ set.seed(2703)
 
 #Values
 #Importing data directly from online repository
-urlfile_1 = "https://raw.githubusercontent.com/Scaling-Watershed-Function/1-swf-knowledge.base/main/assets/data/raw/220725_yrb_resp_vars_legacy.csv?token=GHSAT0AAAAAAB7OSBWFLFNLYTMQQWED7BZAY77YB6Q"
-lgc_o <- read_csv(url(urlfile_1))
+lgc_o <- readr::read_csv(paste0(raw_data,"220725_yrb_resp_vars_legacy.csv"),show_col_types = FALSE)
+spt_o <- readr::read_csv(paste0(raw_data,"230110_yrb_spatial_camp.csv"),show_col_types = FALSE)
+rsp_o <- readr::read_csv(paste0(raw_data,"230116_yrb_respt_vars.csv"),show_col_types = FALSE)
+hbc_o <- readr::read_csv(paste0(raw_data,"230117_yrb_hbgc_vars.csv"),show_col_types = FALSE)
 
-
-lgc_o <- read.csv("1-swf-knowledge.base/assets/data/raw/220725_yrb_resp_vars_legacy.csv",stringsAsFactors = TRUE)
-spt_o <- read.csv("1-swf-knowledge.base/assets/data/raw/230110_yrb_spatial_camp.csv", stringsAsFactors = TRUE)
-rsp_o <- read.csv("1-swf-knowledge.base/assets/data/raw/230116_yrb_respt_vars.csv", stringsAsFactors = TRUE)
-hbc_o <- read.csv("1-swf-knowledge.base/assets/data/raw/230117_yrb_hbgc_vars.csv", stringsAsFactors = TRUE)
 
 #lnd_o is the land use data used by Son et al., 2022a and 2022b to model inputs of 
 #DOC, NO3, and OD to the YR (Although the map in the figures uses NLDC-2016).
@@ -168,8 +182,12 @@ p
 
 # Let's now save these data sets for further analysis.
 
-write.csv(rsp_dat,"1-swf-knowledge.base/assets/data/processed/230120_yrb_rsp_dat.csv")
-write.csv(spt_dat,"1-swf-knowledge.base/assets/data/processed/230120_yrb_spt_dat.csv")
+# fname = "/Users/fguerrero/Documents/GitHub/scaling-watershed-function/1-swf-knowledge.base/assets/data/processed/"
+# flname = "230301_yrb_rsp_dat.csv"
+# a <- paste0(fname,flname)
+
+write.csv(rsp_dat,file = paste0(assets_data,"230301_yrb_rsp_dat.csv"))
+write.csv(spt_dat,file = paste0(assets_data,"230301_yrb_spt_dat.csv"))
 
 ################################################################################
 ################################################################################
@@ -181,6 +199,9 @@ write.csv(spt_dat,"1-swf-knowledge.base/assets/data/processed/230120_yrb_spt_dat
 #Data source: SWAT-NEXXS Model simulations (By Kyongho Son)
 
 # Data
+sdb_dat0 <- readr::read_csv("https://raw.githubusercontent.com/Scaling-Watershed-Function/1-swf-knowledge.base/main/assets/data/raw/230117_yrb_hbgc_vars.csv",
+                show_col_types = FALSE)
+
 sdb_dat0 <- read.csv("1-swf-knowledge.base/assets/data/raw/nhd_WM_streamdatabase_annual_resp_mass_01162023.csv")
 
 # Let's subset this data using the same variables contained in the land use data set for 
