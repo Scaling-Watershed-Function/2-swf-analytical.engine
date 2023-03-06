@@ -17,28 +17,49 @@
 #To run this code in macOS it is necessary to install XQuartz from 
 #www.xquartz.org
 
-librarian::shelf(tidyverse, GGally) #it searches for the packages in your library,
+# librarian::shelf() searches for the packages in your library,
 #if you don't have them installed, it will proceed with the installation and it 
 #will bring them into your work space (like library will commonly do).
+
+librarian::shelf(tidyverse, GGally) 
 set.seed(2703)
+
+#########################################################################################################
+# Import / Export of assets
+
+# Import: Repository path to raw data
+raw_data <- "https://raw.githubusercontent.com/Scaling-Watershed-Function/1-swf-knowledge.base/main/assets/data/raw/"
+
+
+#########################################################################################################
+# Local storage paths: to store locally first and then commit after all necessary
+# changes are implemented. In this way we avoid modifying source files by accident.
+
+assets_data <- "../1-swf-knowledge.base/assets/data/processed/"
+assets_plot <- "../1-swf-knowledge.base/assets/plots/"
+#########################################################################################################
+
 
 # Data:
 
-# Commit test
-
-#values
+# values
 
 #Yakima River Basin (yrb)
-yrb_lgc_o <- read.csv("assets/data/raw/220725_yrb_resp_vars_legacy.csv",
-                      stringsAsFactors = TRUE) #Dataset used for the AGU poster with uncorrected cumulative values
+
+#Dataset used for the AGU poster with uncorrected cumulative values
 #i.e. respiration rates were not normalized by watershed area)
-yrb_spt_o <- read.csv("assets/data/raw/230110_yrb_spatial_camp.csv", 
-                      stringsAsFactors = TRUE) #Predicted respiration rates at field locations
-yrb_rsp_o <- read.csv("assets/data/raw/230116_yrb_respt_vars.csv", 
-                      stringsAsFactors = TRUE) #Updated dataset with corrected cumulative values
-yrb_hbc_o <- read.csv("assets/data/raw/230117_yrb_hbgc_vars.csv", 
-                      stringsAsFactors = TRUE) #Hydro-biogeochemical variables (including residence
+yrb_lgc_o <- readr::read_csv(paste0(raw_data,"220725_yrb_resp_vars_legacy.csv"),show_col_types = FALSE)
+
+#Predicted respiration rates at field locations
+yrb_spt_o <- readr::read_csv(paste0(raw_data,"230110_yrb_spatial_camp.csv"),show_col_types = FALSE)
+
+#Updated dataset with corrected cumulative values
+yrb_rsp_o <- readr::read_csv(paste0(raw_data,"230116_yrb_respt_vars.csv"),show_col_types = FALSE)
+
+#Hydro-biogeochemical variables (including residence
 #time and hyporheic exchange)
+yrb_hbc_o <- readr::read_csv(paste0(raw_data,"230117_yrb_hbgc_vars.csv"),show_col_types = FALSE)
+
 
 #Willamette River Basin (wlm)
 
@@ -47,13 +68,14 @@ yrb_hbc_o <- read.csv("assets/data/raw/230117_yrb_hbgc_vars.csv",
 #consistent, I'm using "_o" for original and "_i" as a sequential index for other raw datasets
 #that would be merged under the labels "rsp" or "hbc".
 
-wlm_rsp_o <- read.csv("assets/data/raw/cum_resp_WM_mass_data_0116_2023.csv", 
-                      stringsAsFactors = TRUE)
-wlm_rsp_i <- read.csv("assets/data/raw/model_resp_wm_rf0116.csv", stringsAsFactors = TRUE)
-wlm_hbc_o <- read.csv("assets/data/raw/nhd_WM_streamdatabase_annual_resp_mass_01162023.csv", 
-                      stringsAsFactors = TRUE)
-wlm_hbc_i <- read.csv("assets/data/raw/model_resp_annual_wm_input_output_df_01_16_2023.csv",
-                      stringsAsFactors = TRUE)
+wlm_rsp_o <- readr::read_csv(paste0(raw_data,"cum_resp_WM_mass_data_0116_2023.csv"),show_col_types = FALSE)
+
+wlm_rsp_i <- readr::read_csv(paste0(raw_data,"model_resp_wm_rf0116.csv"),show_col_types = FALSE)
+
+wlm_hbc_o <- readr::read_csv(paste0(raw_data,"nhd_WM_streamdatabase_annual_resp_mass_01162023.csv"),show_col_types = FALSE)
+
+wlm_hbc_i <- readr::read_csv(paste0(raw_data,"model_resp_annual_wm_input_output_df_01_16_2023.csv"),show_col_types = FALSE)
+
 
 # Re-ordering Willamette River Basin Data
 
@@ -165,6 +187,7 @@ yrb_wlm_rsp <- rbind(yrb_rsp_m2,wlm_rsp_m2)
 
 #Test plot
 
+#Cummulative respiration vs. watershed area
 p0 <- ggplot(yrb_wlm_rsp,
              aes(TOT_BASIN_AREA,
                  cum_totco2g_day_Tdrain_m2))+ 
@@ -184,6 +207,29 @@ p0 <- ggplot(yrb_wlm_rsp,
              ncol = 2)+
   ggtitle("Total Cumulative Respiration per Day per Square Meter of Watershed Area")
 p0
+
+#Hyporheic respiration vs. stream order
+p0 <- ggplot(yrb_wlm_rsp,
+             aes(StreamOrde,
+                 cum_totco2g_day_Tdrain_m2))+ 
+  geom_point(alpha = 0.35, color = "gray")+
+  geom_point(data = na.omit(yrb_wlm_rsp),# Excluding RF-generated data  (in gray color)
+             aes(TOT_BASIN_AREA,
+                 cum_totco2g_day_Tdrain_m2,
+                 color = basin),
+             alpha = 0.35)+
+  scale_x_log10()+
+  scale_y_log10()+
+  geom_abline(slope = 1, intercept = -2.5)+
+  # geom_abline(slope = 0.5, intercept =-4.25,linetype = "dashed")+
+  # geom_abline(slope = 1, intercept =-3,linetype = "solid")+
+  # geom_abline(slope = 1.5, intercept =-1.75,linetype = "dashed")+
+  facet_wrap(~basin, 
+             ncol = 2)+
+  ggtitle("Total Cumulative Respiration per Day per Square Meter of Watershed Area")
+p0
+
+
 
 #We observe zero values for cumulative respiration in both datasets for at least a couple
 #orders of magnitude (~0.1 - 1 km2) of total watershed area. Let's take a look at those:
@@ -253,14 +299,15 @@ yrb_wlm_rsp %>% na.omit(yrb_wlm_rsp) %>% select(COMID,
 ###############################################################################
 #Saving this data set as a "processed" file
 
-write.csv(yrb_wlm_rsp,"assets/data/processed/230202_yrb_wlm_resp_dat.csv",row.names = FALSE)
+write.csv(yrb_wlm_rsp,file = paste0(assets_data,"230202_yrb_wlm_resp_dat.csv"),row.names = FALSE)
   
 
 ################################################################################
 # LAND USE DATA
 ################################################################################
 
-yrb_lnd0 <- read.csv("assets/data/raw/230117_yrb_cmid_land_2011.csv",stringsAsFactors=TRUE)
+yrb_lnd0 <- readr::read_csv(paste0(raw_data,"230117_yrb_cmid_land_2011.csv"),show_col_types = FALSE)
+
 wlm_lnd0 <- wlm_hbc_o %>% select(COMID,
                                  urban,
                                  forest,
@@ -357,7 +404,7 @@ summary(yrb_wlm_lndf)
 ###############################################################################
 #Saving this data set as a "processed" file
 
-write.csv(yrb_wlm_lndf,"assets/data/processed/230202_yrb_wlm_land_filtered_dat.csv",row.names = FALSE)
+write.csv(yrb_wlm_lndf,file = paste0(assets_data,"230202_yrb_wlm_land_filtered_dat.csv"),row.names = FALSE)
 
 ################################################################################
 # HEADER INFO
