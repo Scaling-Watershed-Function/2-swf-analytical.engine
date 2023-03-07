@@ -151,6 +151,7 @@ yrb_rsp_m1$basin <- "Yakima"
 wlm_rsp_m1$basin <- "Willamette"
 
 #Merging with additional hydro-biogeochemical data for both watersheds
+# 230306: Including local respiration data
 
 yrb_hbc_m1 <- select(yrb_hbc_o,
                      COMID,
@@ -164,7 +165,8 @@ yrb_hbc_m1 <- select(yrb_hbc_o,
                      pred_annual_DO,
                      no3_conc_mg_l,
                      logRT_total_hz_s,
-                     logq_hz_total_m_s)
+                     logq_hz_total_m_s,
+                     totco2g_m2_day)
 
 wlm_hbc_m1 <- select(wlm_hbc_i,
                      COMID,
@@ -178,7 +180,8 @@ wlm_hbc_m1 <- select(wlm_hbc_i,
                      pred_annual_DO,
                      no3_conc_mg_l,
                      logRT_total_hz_s,
-                     logq_hz_total_m_s)
+                     logq_hz_total_m_s,
+                     totco2g_m2_day)
 
 yrb_rsp_m2 <- unique(merge(yrb_rsp_m1,yrb_hbc_m1,by = "COMID"))
 wlm_rsp_m2 <- unique(merge(wlm_rsp_m1,wlm_hbc_m1,by = "COMID"))
@@ -209,26 +212,50 @@ p0 <- ggplot(yrb_wlm_rsp,
 p0
 
 #Hyporheic respiration vs. stream order
-p0 <- ggplot(yrb_wlm_rsp,
-             aes(StreamOrde,
-                 cum_totco2g_day_Tdrain_m2))+ 
-  geom_point(alpha = 0.35, color = "gray")+
-  geom_point(data = na.omit(yrb_wlm_rsp),# Excluding RF-generated data  (in gray color)
-             aes(TOT_BASIN_AREA,
-                 cum_totco2g_day_Tdrain_m2,
-                 color = basin),
-             alpha = 0.35)+
-  scale_x_log10()+
+tp <- ggplot(yrb_wlm_rsp,
+             aes(x=as.factor(StreamOrde),
+                 y=totco2g_m2_day,
+                 color = basin,
+                 fill = basin))+ 
+  geom_boxplot(alpha = 0.5)+
   scale_y_log10()+
-  geom_abline(slope = 1, intercept = -2.5)+
-  # geom_abline(slope = 0.5, intercept =-4.25,linetype = "dashed")+
-  # geom_abline(slope = 1, intercept =-3,linetype = "solid")+
-  # geom_abline(slope = 1.5, intercept =-1.75,linetype = "dashed")+
+  xlab("Stream Order")+
+  ylab(expression(paste("Total respiration","",CO[2]*m^-2*day^-1)))+
   facet_wrap(~basin, 
              ncol = 2)+
-  ggtitle("Total Cumulative Respiration per Day per Square Meter of Watershed Area")
-p0
+  theme(legend.position = "none")+
+  ggtitle("Total Respiration per Day per Square Meter of Sediment Surface")
+tp
 
+#Cumulative Hyporheic respiration vs. stream order
+cp <- ggplot(yrb_wlm_rsp,
+             aes(x=as.factor(StreamOrde),
+                 y=cum_totco2g_day_Tsurface_m2,
+                 color = basin,
+                 fill = basin))+ 
+  geom_boxplot(alpha = 0.5)+
+  scale_y_log10()+
+  xlab("Stream Order")+
+  ylab(expression(paste("Cumulative Total respiration","",CO[2]*m^-2*day^-1)))+
+  facet_wrap(~basin, 
+             ncol = 2)+
+  theme(legend.position = "none")+
+  ggtitle("Cumulative Total Respiration per Day per Square Meter of Sediment Surface")
+cp
+
+# Saving these plots as assets in our knowledge base:
+
+ggsave(tp, 
+       file = paste0(assets_plot,"total_resp_stream_order.jpeg"),
+       width = 12,
+       height = 9,
+       units = c("in"))
+
+ggsave(cp, 
+       file = paste0(assets_plot,"cummulative_total_resp_stream_order.jpeg"),
+       width = 12,
+       height = 9,
+       units = c("in"))
 
 
 #We observe zero values for cumulative respiration in both datasets for at least a couple
