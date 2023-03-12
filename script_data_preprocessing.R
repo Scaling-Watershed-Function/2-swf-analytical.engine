@@ -14,6 +14,11 @@ librarian::shelf(sp,sf,raster,rgdal,rasterVis,
                  plotKML,fasterize,egg,nhdplusTools,
                  nhdR,colorspace,stars,pals,foreign,
                  tidyverse)
+#Note: Verify that the sf package was sucessfully installed. Otherwise try install.packages("sf)
+#and answer "no" to the following promt:
+
+#Do you want to install from sources the package which needs compilation? (Yes/no/cancel) 
+
 set.seed(2703)
 
 #########################################################################################################
@@ -31,7 +36,7 @@ assets_data <- "../1-swf-knowledge.base/assets/data/raw/pre-processing/model_inp
 ##model_inputs: model input folder
 
 # Willamette
-
+require(sf)
 nhd_CR_stream<-st_read(paste(assets_data,"shapes/nhd_CR_stream_sub8.shp",sep = "/"))
 tmp<-st_zm(nhd_CR_stream)
 nhd_CR_poly<-tmp[,"COMID"]
