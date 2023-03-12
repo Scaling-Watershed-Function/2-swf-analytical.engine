@@ -15,5 +15,5 @@ git_sitrep() # git situation report
 usethis::create_github_token()
 gitcreds::gitcreds_set() 
 usethis::git_sitrep()
-usethis::git_credentials_forget()
+# credentials::git_credentials_forget()
 
