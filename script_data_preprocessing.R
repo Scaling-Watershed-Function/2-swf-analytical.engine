@@ -13,7 +13,7 @@ librarian::shelf(sp,sf,raster,rgdal,rasterVis,
                  rgeos,lattice,grid,spatstat,
                  plotKML,fasterize,egg,nhdplusTools,
                  nhdR,colorspace,stars,pals,foreign,
-                 tidyverse)
+                 tidyverse,readr)
 #Note: Verify that the sf package was sucessfully installed. Otherwise try install.packages("sf)
 #and answer "no" to the following promt:
 
@@ -42,7 +42,7 @@ tmp<-st_zm(nhd_CR_stream)
 nhd_CR_poly<-tmp[,"COMID"]
 
 ## reading model inputs: substrate concentrations
-
+require(readr)
 stream_annDO<-read_csv(paste(assets_data,"nhd_CR_stream_annual_DO.csv",sep="/"),show_col_types = FALSE)
 stream_annno3<-read.csv(paste(assets_data,"nhd_CR_stream_no3.csv",sep="/"),header=T,sep=',',skip=0)
 stream_annDOC<-read_csv(paste(assets_data,"nhd_CR_stream_annual_DOC.csv",sep="/"),show_col_types = FALSE)
