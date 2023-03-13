@@ -24,10 +24,12 @@ set.seed(2703)
 #########################################################################################################
 # Import / Export of assets
 
-# Import: Repository path to raw data
-raw_data <- "https://raw.githubusercontent.com/Scaling-Watershed-Function/1-swf-knowledge.base/main/assets/data/raw/shapes/"
-
-# Loading NHD data
+# # Import: Repository path to raw data
+# raw_data <- "https://raw.githubusercontent.com/Scaling-Watershed-Function/1-swf-knowledge.base/main/assets/data/raw/pre-processing/model_inputs/"
+# 
+# 
+# # Loading NHD data
+# nhd_YR_stream<-st_read(paste(raw_data,"shapes/nhd_CR_stream_sub8.shp",sep = ""))
 
 # Local import
 assets_data <- "../1-swf-knowledge.base/assets/data/raw/pre-processing/model_inputs" 
@@ -37,9 +39,9 @@ assets_data <- "../1-swf-knowledge.base/assets/data/raw/pre-processing/model_inp
 
 # Willamette
 require(sf)
-nhd_CR_stream<-st_read(paste(assets_data,"shapes/nhd_CR_stream_sub8.shp",sep = "/"))
-tmp<-st_zm(nhd_CR_stream)
-nhd_CR_poly<-tmp[,"COMID"]
+nhd_yrb_stream<-st_read(paste(assets_data,"shapes/nhd_CR_stream_sub9.shp",sep = "/"))
+tmp<-st_zm(nhd_yrb_stream)
+nhd_yrb_poly<-tmp[,"COMID"]
 
 ## reading model inputs: substrate concentrations
 require(readr)
@@ -50,18 +52,18 @@ stream_nexss<-read_csv(paste(assets_data,"nexss_inputs.csv",sep="/"),show_col_ty
 
 
 ## merging the model input data with NHDPLUS stream reach shapefiles
-nhd_CR_stream_resp=merge(nhd_CR_poly,stream_annDO,by="COMID")
-nhd_CR_stream_resp=merge(nhd_CR_stream_resp,stream_annDOC,by="COMID")
-nhd_CR_stream_resp=merge(nhd_CR_stream_resp,stream_annno3,by="COMID")
-nhd_CR_stream_resp=merge(nhd_CR_stream_resp,stream_nexss,by.x="COMID",by.y="comid_nhd")
+nhd_yrb_stream_resp=merge(nhd_yrb_poly,stream_annDO,by="COMID")
+nhd_yrb_stream_resp=merge(nhd_yrb_stream_resp,stream_annDOC,by="COMID")
+nhd_yrb_stream_resp=merge(nhd_yrb_stream_resp,stream_annno3,by="COMID")
+nhd_yrb_stream_resp=merge(nhd_yrb_stream_resp,stream_nexss,by.x="COMID",by.y="comid_nhd")
 
 # 
 # figures<-"ESS-DIVE/figures"
 
-jpeg("Stream DOC_CRB_annual_DOC.jpeg", width = 6, height = 6, units = 'in', res = 300) 
+jpeg("Stream DOC_YRB_annual_DOC.jpeg", width = 6, height = 6, units = 'in', res = 300) 
 par(cex.main=1.5,cex.axis=1.5) 
-plot(nhd_CR_stream_resp[,"Stream DOC"],main="", key.pos = 1, key.width = lcm(2), key.length = 1.0,breaks = "fisher",pal=brewer.reds(10),reset=FALSE)
-# plot(st_geometry(nhd_CR_stream_resp),add=T)
+plot(nhd_yrb_stream_resp[,"Stream DOC"],main="", key.pos = 1, key.width = lcm(2), key.length = 1.0,breaks = "fisher",pal=brewer.reds(10),reset=FALSE)
+# plot(st_geometry(nhd_yrb_stream_resp),add=T)
 
 title("(a) Stream DOC (mg/l)",line=-24, adj = 0.2)
 
