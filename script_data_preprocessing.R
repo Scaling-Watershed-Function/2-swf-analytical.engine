@@ -30,7 +30,7 @@ raw_data <- "https://raw.githubusercontent.com/Scaling-Watershed-Function/1-swf-
 # Loading NHD data
 
 # Local import
-assets_data <- "../1-swf-knowledge.base/assets/data/raw/pre-processing/model_inputs" #It does not work
+assets_data <- "../1-swf-knowledge.base/assets/data/raw/pre-processing/model_inputs" 
 
 ############ loading NHD Data----
 ##model_inputs: model input folder
