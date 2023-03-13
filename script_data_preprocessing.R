@@ -14,8 +14,8 @@ librarian::shelf(sp,sf,raster,rgdal,rasterVis,
                  plotKML,fasterize,egg,nhdplusTools,
                  nhdR,colorspace,stars,pals,foreign,
                  tidyverse,readr)
-#Note: Verify that the sf package was sucessfully installed. Otherwise try install.packages("sf)
-#and answer "no" to the following promt:
+#Note: Verify that the sf package was successfully installed. Otherwise try install.packages("sf)
+#and answer "no" to the following prompt:
 
 #Do you want to install from sources the package which needs compilation? (Yes/no/cancel) 
 
