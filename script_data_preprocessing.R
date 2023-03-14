@@ -33,11 +33,12 @@ set.seed(2703)
 
 # Local import
 assets_data <- "../1-swf-knowledge.base/assets/data/raw/pre-processing/model_inputs" 
+assets_processed <- "../1-swf-knowledge.base/assets/data/processed"
 
 ############ loading NHD Data----
 ##model_inputs: model input folder
 
-# Willamette
+# Yakima River Basin
 require(sf)
 nhd_yrb_stream<-st_read(paste(assets_data,"shapes/nhd_CR_stream_sub9.shp",sep = "/"))
 tmp<-st_zm(nhd_yrb_stream)
@@ -57,17 +58,42 @@ nhd_yrb_stream_resp=merge(nhd_yrb_stream_resp,stream_annDOC,by="COMID")
 nhd_yrb_stream_resp=merge(nhd_yrb_stream_resp,stream_annno3,by="COMID")
 nhd_yrb_stream_resp=merge(nhd_yrb_stream_resp,stream_nexss,by.x="COMID",by.y="comid_nhd")
 
+# Willammette River Basin
+require(sf)
+nhd_wrb_stream<-st_read(paste(assets_data,"shapes/nhd_CR_stream_sub8.shp",sep = "/"))
+tmp<-st_zm(nhd_wrb_stream)
+nhd_wrb_poly<-tmp[,"COMID"]
+
+## merging the model input data with NHDPLUS stream reach shapefiles
+nhd_wrb_stream_resp=merge(nhd_wrb_poly,stream_annDO,by="COMID")
+nhd_wrb_stream_resp=merge(nhd_wrb_stream_resp,stream_annDOC,by="COMID")
+nhd_wrb_stream_resp=merge(nhd_wrb_stream_resp,stream_annno3,by="COMID")
+nhd_wrb_stream_resp=merge(nhd_wrb_stream_resp,stream_nexss,by.x="COMID",by.y="comid_nhd")
+
+# adding columns corresponding to the basins: 
+nhd_yrb_stream_resp$basin = "yakima"
+nhd_wrb_stream_resp$basin = "willamette"
+
+nhd_stream_resp <- rbind(nhd_yrb_stream_resp,nhd_yrb_stream_resp)
+nhd_stream_resp <- rename(nhd_stream_resp,
+                          stream_do_mg_l = `Stream DO`,
+                          stream_doc_mg_l = `Stream DOC`)
+
+
+# Saving dataset as processed data
+
+write_csv(nhd_stream_resp,file=paste(assets_processed,"230313_wlm_ykm_stream_resp_dat.csv",sep = "/"))
+
 # 
 # figures<-"ESS-DIVE/figures"
 
-jpeg("Stream DOC_YRB_annual_DOC.jpeg", width = 6, height = 6, units = 'in', res = 300) 
-par(cex.main=1.5,cex.axis=1.5) 
-plot(nhd_yrb_stream_resp[,"Stream DOC"],main="", key.pos = 1, key.width = lcm(2), key.length = 1.0,breaks = "fisher",pal=brewer.reds(10),reset=FALSE)
-# plot(st_geometry(nhd_yrb_stream_resp),add=T)
+# jpeg("Stream DOC_YRB_annual_DOC.jpeg", width = 6, height = 6, units = 'in', res = 300) 
+# par(cex.main=1.5,cex.axis=1.5) 
+# plot(nhd_yrb_stream_resp[,"Stream DOC"],main="", key.pos = 1, key.width = lcm(2), key.length = 1.0,breaks = "fisher",pal=brewer.reds(10),reset=FALSE)
+# # plot(st_geometry(nhd_yrb_stream_resp),add=T)
+# 
+# title("(a) Stream DOC (mg/l)",line=-24, adj = 0.2)
+# 
+# 
+# dev.off()
 
-title("(a) Stream DOC (mg/l)",line=-24, adj = 0.2)
-
-
-dev.off()
-
-# Yakima River Basin
