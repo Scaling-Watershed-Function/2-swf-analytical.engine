@@ -4,7 +4,7 @@
 ###############################################################################
 
 #By : Francisco Guerrero
-#Data source: Data sets generated with "script_data_prep_wlm_yrb.R"
+#Data source: Data sets generated with "script_comid_ref_landuse.R"
 
 #Loading packages:
 
@@ -18,6 +18,129 @@ librarian::shelf(tidyverse,#(includes ggplot2, readr, dplyr, tidyr, and more...)
                  entropy, usethis)
 
 set.seed(2703)
+
+
+# Data
+
+# Local import
+assets_data <- "../1-swf-knowledge.base/assets/data/raw" 
+
+# Local export
+assets_processed <- "../1-swf-knowledge.base/assets/data/processed"
+
+
+lnd_dat <- read_csv(paste(assets_data,"230321_pnw_2001_landcover.csv", sep = '/'),
+                    show_col_types = FALSE)
+
+lnd_dat <- lnd_dat %>% 
+  mutate(basin = if_else(huc_4=="1703","Yakima","Willamette"))
+
+summary(lnd_dat)
+
+
+################################################################################
+# Information content analysis
+################################################################################
+
+# The NLCD 2001 includes 16 land use categories for both the catchment scale and 
+# the watershed scale. It is common practice for statistical analysis to reduce
+# the number of land use types to a more manageable quantity (5-6). The aggregation
+# criteria may vary among researchers and it is not necessarily guided by data. 
+
+# Here, we use an information-theory derived criteria to identify not only the
+# categories that contribute the most to the spatial heterogeneity across the 
+# landscape but also data-driven criteria for aggregation of these categories for 
+# modeling purposes. 
+
+# We are going to use re sampling to estimate the uncertainty about the information
+# contribution from the land use components.
+
+# Let's start with local analysis
+
+# Willamette River Basin
+
+# Local data set
+
+lnd_wlm_cat <- lnd_dat %>% 
+  filter(basin == "Willamette") %>% 
+  select(starts_with("cat")) %>% 
+  select(-"cat_sink_area_km2") %>% 
+  mutate(total = rowSums(across(where(is.numeric))))
+
+summary(lnd_wlm_cat)
+
+# We expect all the rows to sum up to 100%. We found a few observations that go 
+# a bit above or below that value. We will proceed with the data as is for practical
+# reasons. 
+
+out_wlm_cat <- lnd_wlm_cat %>% 
+  filter(total==100.03)
+
+out_wlm_cat
+
+
+# Watershed dataset
+
+lnd_wlm_wsd <- lnd_dat %>% 
+  filter(basin == "Willamette") %>% 
+  select(starts_with("wsd")) %>% 
+  mutate(total = rowSums(across(where(is.numeric))))
+
+summary(lnd_wlm_wsd)
+
+out_wlm_wsd <- lnd_wlm_wsd %>% 
+  filter(total<99)
+
+# We have a total of 21 observations with totals < 99%. We will proceed with the
+# data as is. 
+
+
+
+
+
+
+
+
+
+
+
+
+out_wlm_cat
+
+
+lnd_wlm_cat <- lnd_dat %>% 
+  filter(basin == "Willamette") %>% 
+  select(starts_with("wsd")) 
+  
+  
+  lnd_wlm_cat <- lnd_wlm %>% 
+  select(starts_with("cat")) %>% 
+  lnd_wlm_wsd <- lnd_wlm %>% 
+  select(starts_with("wsd"))
+  
+
+lnd_wlm_cat <- lnd_wlm %>% 
+  select
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Tentative color palette for land uses (to be changed using colors corresponding
 # to the national database)
