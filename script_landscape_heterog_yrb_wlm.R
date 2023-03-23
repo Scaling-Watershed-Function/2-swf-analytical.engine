@@ -55,44 +55,49 @@ summary(lnd_dat)
 # We are going to use re sampling to estimate the uncertainty about the information
 # contribution from the land use components.
 
-# Let's start with local analysis
+# We will run this analysis across the entire dataset, including the Willamette and 
+# the Yakima data in the estimations.
 
-# Willamette River Basin
+# Let's start with local analysis
 
 # Local data set
 
-lnd_wlm_cat <- lnd_dat %>% 
-  filter(basin == "Willamette") %>% 
+lnd_pnw_cat0 <- lnd_dat %>% 
   select(starts_with("cat")) %>% 
   select(-"cat_sink_area_km2") %>% 
   mutate(total = rowSums(across(where(is.numeric))))
 
-summary(lnd_wlm_cat)
+summary(lnd_pnw_cat0)
 
 # We expect all the rows to sum up to 100%. We found a few observations that go 
-# a bit above or below that value. We will proceed with the data as is for practical
-# reasons. 
+# a bit above or below that value. To make sure everything adds to 1 (fraction) 
+# we recalculate land use fractions by dividing by the total row sums
 
-out_wlm_cat <- lnd_wlm_cat %>% 
-  filter(total==100.03)
+lnd_pnw_cat <- lnd_pnw_cat0[-17]/rowSums(lnd_pnw_cat0[-17])
 
-out_wlm_cat
+# and quickly verify by using:
+
+summary(rowSums(lnd_pnw_cat))
 
 
 # Watershed dataset
 
-lnd_wlm_wsd <- lnd_dat %>% 
-  filter(basin == "Willamette") %>% 
+# We will proceed similarly with the watershed dataset:
+
+lnd_pnw_wsd0 <- lnd_dat %>% 
   select(starts_with("wsd")) %>% 
   mutate(total = rowSums(across(where(is.numeric))))
 
-summary(lnd_wlm_wsd)
+summary(lnd_pnw_wsd0)
 
-out_wlm_wsd <- lnd_wlm_wsd %>% 
-  filter(total<99)
+# We have several observations that are above or below 100 (or 1), so we recalculate
+# fractions:
 
-# We have a total of 21 observations with totals < 99%. We will proceed with the
-# data as is. 
+lnd_pnw_wsd <- lnd_pnw_wsd0[-17]/rowSums(lnd_pnw_wsd0[-17])
+
+# and quickly verify by using:
+
+summary(rowSums(lnd_pnw_wsd))
 
 ################################################################################
 #April 29 2019 Loon Lake Information Content DataAnalysis (MPEq and rMPEq)
@@ -183,6 +188,7 @@ ic0<-matrix(1:ncols, ncols, 4,dimnames=list(NULL,c("Yj","H","Hmax","I")))#Matrix
 #content results
 
 im0<-lgs/sum(lgs)  #Normalizing matrices
+
 #Calculating information contributions
 for (j in 1:ncols){
   yjn=sum(im0[,j])
