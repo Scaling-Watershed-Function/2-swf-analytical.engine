@@ -94,6 +94,253 @@ out_wlm_wsd <- lnd_wlm_wsd %>%
 # We have a total of 21 observations with totals < 99%. We will proceed with the
 # data as is. 
 
+################################################################################
+#April 29 2019 Loon Lake Information Content DataAnalysis (MPEq and rMPEq)
+################################################################################
+#Chapter 3 figures
+################################################################################
+
+###################################################
+#LOADING LIBRARIES AND SETTING WORKING DIRECTORIES
+###################################################
+
+#Loading libraries
+
+library(ggplot2)
+library(reshape2)
+library(lubridate)
+library(gridExtra)
+library(grid)
+library(plyr)
+library(dplyr)
+library(nlme)
+library(doBy)
+library(MASS)
+library(lsmeans)
+library(carData)
+library(utils)
+library(multcompView)
+library(VIF)
+library(cowplot)
+library(scales)
+library(imputeTS)
+library(RColorBrewer)
+library(tidyr)
+library(gridExtra)
+library(lattice)
+library(grid)
+library(gridBase)
+library(entropy)
+library(TSA)
+
+#Setting up working directory
+
+setwd("C:/Users/FranciscoJose/Documents/PhDOSU/ThesisDatAnalysis/loonlk/180811_inf_cont")
+
+
+################################################################################
+#Step 2.1  Information Content Analysis-Random sampling of dataset
+################################################################################
+#
+#Once we have computed the information contribution of each frequency component 
+#to overall entropy (or its reduction), we want to obtain the standard deviations
+#for the information content for each grain size by randomly sampling the matrix
+#and calculating the information contribution of each grain size in each iteration.
+#Then, we calculate the mean information contribution from all grain sizes as well as the
+#confidence intervals for such contributions
+#######################################################
+
+
+#Dataset with grain size information
+
+lgs<-read.csv("180811_llake_g_dat.csv")#A matrix with grain size percentages from laser difractometry (l)ake(g)rain(s)ize
+dlk<-read.csv("190428_diameters_llk.csv")#Vector with particle size classes (otherwise imported as factors)
+
+#Particle size histograms
+
+lgsh<-t(lgs)
+
+h1<-as.data.frame(lgsh[2:83,10])
+colnames(h1)<-c("percent")
+h1<-cbind(dlk,h1)
+
+p<-ggplot(h1,aes(diameter,percent, fill= percent))+
+  geom_area(alpha=0.5)+
+  geom_line()+
+  scale_x_log10()
+p
+
+
+lgs<-dplyr::select(lgs,-z)#Exlcuding column with depth values
+
+
+#Setting parameters for calculations
+nrows=815 #Number of depth samples taken in each iteration 
+ncols=82 #Number of grain size components
+
+#Estimating original values for information content
+ic0<-matrix(1:ncols, ncols, 4,dimnames=list(NULL,c("Yj","H","Hmax","I")))#Matrix with information content 
+#content results
+
+im0<-lgs/sum(lgs)  #Normalizing matrices
+#Calculating information contributions
+for (j in 1:ncols){
+  yjn=sum(im0[,j])
+  hn=entropy(im0[,j],unit="log2")
+  hmaxn=log2(nrows)
+  ic0[j,1]= yjn
+  ic0[j,2]= hn
+  ic0[j,3]= hmaxn
+  ic0[j,4]=yjn%*%(hmaxn-hn)
+}
+ic0
+ic0<-as.data.frame(ic0)
+ic0<-cbind(dlk,ic0)
+
+#write.csv(ic0,"190428_InformationContent_llk.csv")
+
+#Estimating bootsrapped information content
+
+ic= matrix(1:ncols, ncols, 4,dimnames=list(NULL,c("Yjn","Hn","Hmaxn","In")))
+
+list_yj=list()# in this list we will store the results from the 10000 iterations
+list_hj=list()
+list_ic=list()
+
+for (i in 1:10000){
+  if (i==10001){
+    break
+  }
+  nmp=lgs[sample(nrow(lgs),size=nrows,replace=TRUE),]
+  im=nmp/sum(nmp)  #Normalizing matrices
+  #Calculating information contributions
+  for (j in 1:ncols){
+    yjn=sum(im[,j])
+    hn=entropy(im[,j],unit="log2")
+    hmaxn=log2(nrows)
+    ic[j,1]= yjn
+    ic[j,2]= hn
+    ic[j,3]= hmaxn
+    ic[j,4]=yjn%*%(hmaxn-hn)
+  }
+  
+   list_yj[[i]]<-ic[,1]
+   list_hj[[i]]<-ic[,2]
+   list_ic[[i]]<-ic[,4]
+  
+}
+m_yj=do.call("rbind", list_yj)# it combines all the lists in the same file
+m_yj=as.data.frame(m_yj)#it converts the joined list into a dataframe that can be manipulated with R functions
+m_yj1=t(sapply(m_yj, function(cl) list(means=mean(cl,na.rm=TRUE), sds=sd(cl,na.rm=TRUE))))# produces a string of data with means and s.d.
+Yj_mean=as.numeric(m_yj1[,1]); Yj_sd=as.numeric(m_yj1[,2])#it transforms the previous string into numeric data
+
+m_hj=do.call("rbind", list_hj)
+m_hj=as.data.frame(m_hj)
+m_hj1=t(sapply(m_hj, function(cl) list(means=mean(cl,na.rm=TRUE), sds=sd(cl,na.rm=TRUE))))
+Hj_mean=as.numeric(m_hj1[,1]); Hj_sd=as.numeric(m_hj1[,2])
+
+m_ic=do.call("rbind", list_ic)
+m_ic=as.data.frame((m_ic))
+m_ic1=t(sapply(m_ic, function(cl) list(means=mean(cl,na.rm=TRUE), sds=sd(cl,na.rm=TRUE))))
+Ic_mean=as.numeric(m_ic1[,1]); Ic_sd=as.numeric(m_ic1[,2])
+
+df=as.data.frame(cbind(Yj_mean,Yj_sd,Hj_mean,Hj_sd,Ic_mean,Ic_sd))#it combines the vectors of means and s.d.s
+
+df<-cbind(dlk,df)
+
+
+#Plotting histograms for Yj, entropy, and information content
+ma<-m_yj[,21:40]
+mb<-m_hj[,41:61]
+mc<-m_ic[,62:82]
+
+ma<-gather(ma,"class","yj")
+mb<-gather(mb,"class","hj")
+mc<-gather(mc,"class","ic")
+
+
+p<-ggplot(ma,aes(yj))+
+  geom_histogram()+
+  facet_wrap(~as.factor(class),scale="free")
+p
+
+#Quantile-quantile plots
+p1<-ggplot(ma,aes(sample=yj))+
+  stat_qq()+
+  stat_qq_line()+
+  facet_wrap(~as.factor(class),scale="free")
+p1
+
+#These plots showed that we could assume normality for the sampling distributions
+
+#Calculating normal bootstrap confidence interval with a correction for bias
+
+a<-0.95
+z<-qnorm(a)
+Ic0<-ic0$I
+df<-cbind(Ic0,df)
+
+df$up_ci<-(2*Ic0-Ic_mean)+(z*Ic_sd)
+df$lw_ci<-(2*Ic0-Ic_mean)-(z*Ic_sd)
+
+write.csv(df,"190428_inf_stats_llk_10k_bootst.csv")
+
+#Plotting results
+
+
+#Preparing datasets for plotting
+df1<-dplyr::select(df,diameter,Yj_mean,Ic_mean,up_ci,lw_ci)
+df1$Yj_mean<-rescale(Yj_mean,to= c(0, 1),from = range(Yj_mean, na.rm = TRUE, finite = TRUE))
+
+rd<-dplyr::select(df, diameter, Ic_mean,up_ci,lw_ci)
+rd1<-gather(rd,"metric","val.",c(2:4),factor_key = TRUE)
+rd1$val.<-rescale(rd1$val.,to= c(0, 1),from = range(rd1$val, na.rm = TRUE, finite = TRUE))
+ic1<-spread(rd1,"metric","val.")
+
+#Rescaling datastets
+rdf1<-cbind(df1$diameter,df1$Yj_mean,ic1$Ic_mean,ic1$up_ci,ic1$lw_ci)
+colnames(rdf1)<-c("Diameter","Yj","Ic","Up_ci","Lw_ci")
+rdf1<-as.data.frame(rdf1)
+
+#Extracting rows with highest information content within each group
+rdf2<-rdf1[c(15,23,37,58,67,78),]
+
+#Plot
+p<-ggplot(rdf1,aes(Diameter,Yj))+
+  geom_area(alpha=0.3,fill="orange")+
+  geom_ribbon(aes(ymin=Lw_ci,ymax=Up_ci),fill="gray70",alpha=0.35)+
+  geom_line(aes(Diameter,Ic))+
+  geom_point(aes(Diameter,Ic))+
+  geom_linerange(data=rdf2,aes(x=Diameter, ymax=Ic, ymin=0),linetype="dashed")+
+  geom_point(data=rdf2,aes(Diameter,Ic,color=Ic),size=4.0)+
+  scale_x_log10(expand=c(0,0),position="bottom",breaks=c(0.001,0.01,1,10,100,1000))+
+  theme(axis.text=element_text(colour="black",size=14),
+        axis.title = element_text(size = 16),
+        axis.title.x = element_blank(),
+        panel.grid.minor= element_line(colour = "gray", linetype = "dotted"), 
+        panel.grid.major = element_line(colour = "gray", linetype = "dashed"),
+        panel.border = element_rect(fill=NA, colour = "black", size=1),
+        panel.background=element_rect(fill="snow"),
+        axis.ticks.length = unit(0.254, "cm"),
+        axis.ticks = element_line(colour = "black", size=1), 
+        axis.line = element_line(colour = "black"),
+        legend.position = c(.05,.90),
+        legend.direction = "vertical",
+        legend.background = element_rect(fill=NA),
+        legend.title = element_blank(),
+        plot.margin = unit(c(1,0.3,1,0.3), "cm"))
+p
+
+p<-p+geom_vline(xintercept = 1.0, size=0.8,linetype="dotted",colour="black")+
+  geom_vline(xintercept = 15.1,size=0.8,linetype="dotted",colour="black")+
+  geom_rect(xmin = log(0.45), ymin = -Inf, xmax = log(0.5), ymax = +Inf, fill = "#8c510a",alpha=0.01,color=NA)+
+  geom_rect(xmin = log(0.78), ymin = -Inf, xmax = log(0.87), ymax = +Inf, fill = "#d8d365",alpha=0.01,color=NA)+
+  geom_rect(xmin = log(1.8), ymin = -Inf, xmax = log(2), ymax = +Inf, fill = "#f6e8c3",alpha=0.01,color=NA)+
+  geom_rect(xmin = log(6.3), ymin = -Inf, xmax = log(7), ymax = +Inf, fill = "#01665e",alpha=0.01,color=NA)+
+  geom_rect(xmin = log(11), ymin = -Inf, xmax = log(12.2), ymax = +Inf, fill = "#5ab4ac",alpha=0.01,color=NA)+
+  geom_rect(xmin = log(21.2), ymin = -Inf, xmax = log(23.2), ymax = +Inf, fill = "#c7eae5",alpha=0.01,color=NA)+
+  geom_ribbon(data=filter(inf_c,sple=="obs"),aes(x=s_um, ymin=mn, ymax=mx), fill="#feebe2", alpha=.2,inherit.aes = FALSE)
+p
 
 
 
