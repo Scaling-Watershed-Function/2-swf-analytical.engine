@@ -20,6 +20,34 @@ librarian::shelf(tidyverse,#(includes ggplot2, readr, dplyr, tidyr, and more...)
 set.seed(2703)
 
 
+# NLDC Legend Colors
+# Source: https://github.com/BuzzFeedNews/us-land-cover/blob/master/nlcd_legend.csv
+
+# Open water	#5475a8
+# Perenn. ice/snow	#ffffff
+# Open space	#e8d1d1
+# Low intens. dev.	#e29e8c
+# Med. intens. dev.	#f00f00
+# High intens. dev.	#b50000
+# Barren	#d2cdc0
+# Deciduous forest	#85c77e
+# Evergreen forest	#38814e
+# Mixed forest	#d4e7b0
+# Shrub/scrub	#dcca8f
+# Grassland	#e2e2c1
+# Pasture/hay	#fbf65d
+# Cultivated crops	#ca9146
+# Woody wetland	#c8e6f8
+# Other wetland	#64b3d5
+
+# NLDC Colors
+
+nlcd_colors <- c("#5475a8","#ffffff","#e8d1d1","#e29e8c","#f00f00",
+                 "#b50000","#d2cdc0","#85c77e","#38814e","#d4e7b0",
+                 "#dcca8f","#e2e2c1","#fbf65d","#ca9146","#c8e6f8",
+                 "#64b3d5")
+
+
 # Data
 
 # Local import
@@ -42,14 +70,14 @@ summary(lnd_dat)
 # Information content analysis
 ################################################################################
 
-# The NLCD 2001 includes 16 land use categories for both the catchment scale and 
+# The NLCD 2001 includes 16 land use wsdegories for both the wsdchment scale and 
 # the watershed scale. It is common practice for statistical analysis to reduce
 # the number of land use types to a more manageable quantity (5-6). The aggregation
 # criteria may vary among researchers and it is not necessarily guided by data. 
 
 # Here, we use an information-theory derived criteria to identify not only the
-# categories that contribute the most to the spatial heterogeneity across the 
-# landscape but also data-driven criteria for aggregation of these categories for 
+# wsdegories that contribute the most to the spatial heterogeneity across the 
+# landscape but also data-driven criteria for aggregation of these wsdegories for 
 # modeling purposes. 
 
 # We are going to use re sampling to estimate the uncertainty about the information
@@ -62,22 +90,22 @@ summary(lnd_dat)
 
 # Local data set
 
-lnd_pnw_cat0 <- lnd_dat %>% 
-  select(starts_with("cat")) %>% 
-  select(-"cat_sink_area_km2") %>% 
+lnd_pnw_wsd0 <- lnd_dat %>% 
+  select(starts_with("wsd")) %>% 
+  select(-"wsd_sink_area_km2") %>% 
   mutate(total = rowSums(across(where(is.numeric))))
 
-summary(lnd_pnw_cat0)
+summary(lnd_pnw_wsd0)
 
 # We expect all the rows to sum up to 100%. We found a few observations that go 
 # a bit above or below that value. To make sure everything adds to 1 (fraction) 
 # we recalculate land use fractions by dividing by the total row sums
 
-lnd_pnw_cat <- lnd_pnw_cat0[-17]/rowSums(lnd_pnw_cat0[-17])
+lnd_pnw_wsd <- lnd_pnw_wsd0[-17]/rowSums(lnd_pnw_wsd0[-17])
 
 # and quickly verify by using:
 
-summary(rowSums(lnd_pnw_cat))
+summary(rowSums(lnd_pnw_wsd))
 
 
 # Watershed dataset
@@ -99,8 +127,135 @@ lnd_pnw_wsd <- lnd_pnw_wsd0[-17]/rowSums(lnd_pnw_wsd0[-17])
 
 summary(rowSums(lnd_pnw_wsd))
 
+#wsdchment scale
+
+#Estimating original values for information content
+
+ncols <- ncol(lnd_pnw_wsd)
+nrows <- nrow(lnd_pnw_wsd)
+use_wsd <- as.data.frame(colnames(lnd_pnw_wsd))
+colnames(use_wsd) <- "land_use"
+
+ic_wsd<-matrix(1:ncols, ncols, 4,dimnames=list(NULL,c("Yj","H","Hmax","I")))#Matrix with information content 
+#content results
+
+im0<-lnd_pnw_wsd/sum(lnd_pnw_wsd)  #Normalizing matrices
+
+#Calculating information contributions
+for (j in 1:ncols){
+  yjn=sum(im0[,j])
+  hn=entropy(im0[,j],unit="log2")
+  hmaxn=log2(nrows)
+  ic_wsd[j,1]= yjn
+  ic_wsd[j,2]= hn
+  ic_wsd[j,3]= hmaxn
+  ic_wsd[j,4]=yjn%*%(hmaxn-hn)
+}
+ic_wsd
+
+ic_wsd <- cbind(use_wsd,ic_wsd)
+
+wsd_lnd_levels <- c("wsd_water",
+                    "wsd_snow",
+                    "wsd_developed_op",
+                    "wsd_developed_lw",
+                    "wsd_developed_md",
+                    "wsd_developed_hg",
+                    "wsd_barren",
+                    "wsd_forest_dcd",
+                    "wsd_forest_evg",
+                    "wsd_forest_mxd",
+                    "wsd_shrub",
+                    "wsd_grass",
+                    "wsd_pasture",
+                    "wsd_crops",
+                    "wsd_wetland_wood",
+                    "wsd_wetland_herb")
+
+ic_wsd$land_use <- factor(ic_wsd$land_use,levels = wsd_lnd_levels)
+
+p <- ggplot(ic_wsd,aes(x=reorder(land_use,I), y = I, fill = land_use))+
+  geom_bar(position="dodge",stat="identity") +
+  ylab("Information contribution")+
+  xlab("Land use (NLDC-2001 (2019))")+
+  scale_fill_manual(values = nlcd_colors)+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  coord_flip()
+p
+
+# geom bar required a workaround as explained by: 
+# https://stackoverflow.com/questions/29525130/ggplot2-plotting-a-single-value-in-a-bar-graph
+
+#Watershed scale
+
+#Estimating original values for information content
+
+ncols <- ncol(lnd_pnw_wsd)
+nrows <- nrow(lnd_pnw_wsd)
+use_wsd <- as.data.frame(colnames(lnd_pnw_wsd))
+colnames(use_wsd) <- "land_use"
+
+ic_wsd<-matrix(1:ncols, ncols, 4,dimnames=list(NULL,c("Yj","H","Hmax","I")))#Matrix with information content 
+#content results
+
+im0<-lnd_pnw_wsd/sum(lnd_pnw_wsd)  #Normalizing matrices
+
+#Calculating information contributions
+for (j in 1:ncols){
+  yjn=sum(im0[,j])
+  hn=entropy(im0[,j],unit="log2")
+  hmaxn=log2(nrows)
+  ic_wsd[j,1]= yjn
+  ic_wsd[j,2]= hn
+  ic_wsd[j,3]= hmaxn
+  ic_wsd[j,4]=yjn%*%(hmaxn-hn)
+}
+ic_wsd
+
+ic_wsd <- cbind(use_wsd,ic_wsd)
+
+wsd_lnd_levels <- c("wsd_water",
+                    "wsd_snow",
+                    "wsd_developed_op",
+                    "wsd_developed_lw",
+                    "wsd_developed_md",
+                    "wsd_developed_hg",
+                    "wsd_barren",
+                    "wsd_forest_dcd",
+                    "wsd_forest_evg",
+                    "wsd_forest_mxd",
+                    "wsd_shrub",
+                    "wsd_grass",
+                    "wsd_pasture",
+                    "wsd_crops",
+                    "wsd_wetland_wood",
+                    "wsd_wetland_herb")
+
+ic_wsd$land_use <- factor(ic_wsd$land_use,levels = wsd_lnd_levels)
+
+p <- ggplot(ic_wsd,aes(x=reorder(land_use,I), y = I, fill = land_use))+
+  geom_bar(position="dodge",stat="identity") +
+  ylab("Information contribution")+
+  xlab("Land use (NLDC-2001 (2019))")+
+  scale_fill_manual(values = nlcd_colors)+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  coord_flip()
+p
+
+
+
+
+
+
+
+
+
+
+
+
+
 ################################################################################
-#April 29 2019 Loon Lake Information Content DataAnalysis (MPEq and rMPEq)
+#April 29 2019 Loon Lake Information Content Data Analysis (MPEq and rMPEq)
 ################################################################################
 #Chapter 3 figures
 ################################################################################
@@ -358,21 +513,21 @@ p
 
 
 
-out_wlm_cat
+out_wlm_wsd
 
 
-lnd_wlm_cat <- lnd_dat %>% 
+lnd_wlm_wsd <- lnd_dat %>% 
   filter(basin == "Willamette") %>% 
   select(starts_with("wsd")) 
   
   
-  lnd_wlm_cat <- lnd_wlm %>% 
-  select(starts_with("cat")) %>% 
+  lnd_wlm_wsd <- lnd_wlm %>% 
+  select(starts_with("wsd")) %>% 
   lnd_wlm_wsd <- lnd_wlm %>% 
   select(starts_with("wsd"))
   
 
-lnd_wlm_cat <- lnd_wlm %>% 
+lnd_wlm_wsd <- lnd_wlm %>% 
   select
 
 
@@ -461,7 +616,7 @@ lnd %>% select(basin,hrl,hrt) %>%
 # Willamette River Basin
 
 # Local data set
-lnd_el <- filter(lnd,basin == "Willamette") %>% #Notice the specification of the watershed of interest
+lnd_el <- filter(lnd,basin == "Willamette") %>% #Notice the specifiwsdion of the watershed of interest
   select(agrc,
          frst,
          shrb,
@@ -536,7 +691,7 @@ p5
 # Yakima River Basin
 
 # Local data set
-lnd_el <- filter(lnd,basin == "Yakima") %>% #Notice the specification of the watershed of interest
+lnd_el <- filter(lnd,basin == "Yakima") %>% #Notice the specifiwsdion of the watershed of interest
   select(agrc,
          frst,
          shrb,
