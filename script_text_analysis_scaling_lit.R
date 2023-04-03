@@ -80,7 +80,7 @@ pub_dat<- dplyr::select(t_df_c, id, authors, year, journal, all_of(pub_comp)) %>
 # (pub_tokens). There are several packages you could use to tokenize a piece of 
 # text, here we will use the tidytext package for most of our analysis. 
 
-# What the following chunk of code does is: 1) call the pub_dat dataset, 2) break the 
+# What the following chunk of code contains two parts:  does is: 1) call the pub_dat dataset, 2) break the 
 # chunk of (nested) text into tokens (output = word) by using the function unnest_tokens(),
 # 3) eliminating duplicated words with distinct(), 4) grouping the tokens (word) by years,
 # 5) calculating the frequency of a given token in each year -count(), and adding a new
@@ -115,35 +115,42 @@ pub_tokens <- filter(pub_dat) %>%
 #source: https://chat.openai.com/auth/login?next=/chat/f817b62b-ac51-4121-bad6-f6f0fd8c7d90 
 
 
-res_plot <- 0.8
-depth <- res_plot * nrow(pub_tokens)
-low_lim <- min(pub_tokens$year)
-upp_lim <- max(pub_tokens$year)
+res_plot = 0.85
+span_y <- res_plot * nrow(pub_tokens)
 set.seed(27)
-word_spacing = pub_tokens$pst_rel + 0.8
 
-p <- pub_tokens[1:depth,] %>% 
+pub_tkns_plot <- pub_tokens[1:span_y,] 
+
+p <- pub_tokens[1:span_y,] %>% 
   ggplot(aes(x = year, y = pst_rel, color = -year, size = word_freq, label = word)) +
-  # geom_point(data = . %>% filter(word_freq < 2), size = 0.5) +
-  # geom_jitter(data = . %>% filter(word_freq > 1),height = 0.1, width = 0) +
-  # scale_size(range = c(1, 10), name = "Frequency") +
   geom_text(aes(size = word_freq),check_overlap = TRUE, hjust = 0)+
+  scale_color_viridis_c(option = "turbo")+
+  # scale_color_gradient2(low = "#fde725", high = "lightblue")+
   scale_radius(range = c(3,6))+
-  theme_classic() +
-  theme(legend.position = "none")+
-  scale_y_log10()
-
-# Display the plot
+  scale_y_log10()+
+  theme_minimal()+
+  theme(legend.position = "none",
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_rect(fill = "snow"),
+        axis.ticks.length.x = unit(0.15,"cm"),
+        axis.ticks.x = element_line(colour = "black"))
 p
+
+
+# This one works but the number of words is too high
+int_p <- ggplotly(p)
+int_p
+
 
 #source: https://ggplot2.tidyverse.org/reference/position_jitter.html
 
 # Conceptual maps from n-grams
 
 gram_l = 2
-breath = 150
-time_window = 2008
-
+breath = 250
+time_window = 1990
 
 n_gram <- paste(gram_l,"gram",sep='-')
 
@@ -154,10 +161,10 @@ columns <- paste(b,a,sep = '')
 pub_ngrams <- pub_dat %>%
   ungroup() %>%
   unnest_tokens(n_gram, pub_comp, token = "ngrams", n = gram_l) %>%
-  separate(n_gram, columns, sep = " ", remove = FALSE) %>%
-  # group_by(year) %>% 
-  count(across(all_of(columns), ~.x), sort = TRUE) %>%
-  # count(n_gram, sort = TRUE) %>% 
+  # separate(n_gram, columns, sep = " ", remove = FALSE) %>%
+  group_by(year) %>%
+  # count(across(all_of(columns), ~.x), sort = TRUE) %>%
+  count(n_gram, sort = TRUE) %>%
   mutate(rank = row_number(),
          total = sum(n),
          t_freq = n/total)
@@ -166,30 +173,8 @@ head(pub_ngrams)
 # Create the graph using igraph
 ngram_graph <- pub_ngrams %>%
   filter(rank < breath) %>%
-  # filter(year > time_window) %>% 
+  filter(year > time_window) %>%
   graph_from_data_frame()
-
-# Convert the graph to a ggplot object using ggraph
-ggplot_graph <- ggraph(ngram_graph, layout = "fr") +
-  geom_edge_link(aes(edge_alpha = n, edge_width = n), edge_colour = "sienna3") +
-  geom_node_point(size = 2) +
-  geom_node_text(aes(label = name), nudge_x = 0.1, nudge_y = 0.1, size = 2.5) +
-  ggtitle("Interactive Network Graph using plotly and ggraph") +
-  theme_void() +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  guides(size = FALSE)
-
-# Convert the ggplot object to an interactive plot using ggplotly
-plotly_graph <- ggplotly(ggplot_graph, tooltip = c("name", "degree"))
-
-# Add plotly click interactions
-plotly_graph <- plotly_graph %>% 
-  event_register("plotly_click")
-
-# Display the interactive plot
-plotly_graph
-
-# This code generate a plotly version but with no links
 
 
 # Create the graph using visNetworks
@@ -199,9 +184,13 @@ library(visNetwork)
 # Create a data frame for nodes
 node_df <- data.frame(id = V(ngram_graph)$name, 
                       size = 10, 
-                      label = V(ngram_graph)$name,
-                      title = paste("Rank:", V(ngram_graph)$rank, "<br>",
-                                    "Year:", V(ngram_graph)$year))
+                      label = V(ngram_graph)$name)#,
+                      # title = paste("Rank:", V(ngram_graph)$rank, "<br>",
+                      #               "Year:", V(ngram_graph)$year))
+# rank and year are not properly displayed in the final graphic. It seems that 
+# n_gram graph generates lists with different lenghts and the mapping between
+# variables and their ranks is broken.
+
 
 # Create a data frame for edges
 edge_df <- data.frame(from = as.character(get.edgelist(ngram_graph)[,1]), 
@@ -226,4 +215,27 @@ visNetwork(nodes = node_df, edges = edge_df,
 
 # source: https://cran.r-project.org/web/packages/visNetwork/vignettes/Introduction-to-visNetwork.html
 
+################################################################################
 
+# Convert the graph to a ggplot object using ggraph
+ggplot_graph <- ggraph(ngram_graph, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n, edge_width = n), edge_colour = "sienna3") +
+  geom_node_point(size = 2) +
+  geom_node_text(aes(label = name), nudge_x = 0.1, nudge_y = 0.1, size = 2.5) +
+  ggtitle("Interactive Network Graph using plotly and ggraph") +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  guides(size = FALSE)
+ggplot_graph
+
+# Convert the ggplot object to an interactive plot using ggplotly
+plotly_graph <- ggplotly(ggplot_graph, tooltip = c("name", "degree"))
+
+# Add plotly click interactions
+plotly_graph <- plotly_graph %>% 
+  event_register("plotly_click")
+
+# Display the interactive plot
+plotly_graph
+
+# This code generate a plotly version but with no links
