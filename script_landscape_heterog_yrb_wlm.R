@@ -274,4 +274,4 @@ lnd_dat <- lnd_dat %>%
          w_human_scp = wsd_pasture + wsd_crops + wsd_developed_op + wsd_developed_lw + wsd_developed_md + wsd_developed_hg,
          w_barren_scp = wsd_barren)
 
-write.csv(lnd_dat,paste(assets_processed,"230324_inf_cont_lnd.csv",sep = '/'))
+write.csv(lnd_dat,paste(assets_processed,"230324_inf_cont_lnd.csv",sep = '/',),row.names = FALSE)
