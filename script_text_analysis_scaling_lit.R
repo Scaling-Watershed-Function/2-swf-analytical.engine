@@ -4,7 +4,7 @@ librarian::shelf(dplyr, tidytext, tidyverse,
                  widyr,igraph, ggraph, plotly,
                  wordcloud, reshape2, graphlayouts,
                  pluralize, quanteda, qgraph, cowplot, readr,
-                 ggwordcloud,tm,scales, ggrepel, ggplotify)
+                 ggwordcloud,tm,scales, ggrepel, ggplotify,zoo)
 
 
 # Local Import Path
@@ -148,7 +148,7 @@ int_p
 
 # Conceptual maps from n-grams
 
-gram_l = 2
+gram_l = 4
 breath = 250
 time_window = 1990
 
@@ -158,13 +158,13 @@ a <- seq(1:gram_l)
 b <- rep("word",times=gram_l)
 columns <- paste(b,a,sep = '')
 
+# Concept Oriented Networks
+
 pub_ngrams <- pub_dat %>%
   ungroup() %>%
   unnest_tokens(n_gram, pub_comp, token = "ngrams", n = gram_l) %>%
-  # separate(n_gram, columns, sep = " ", remove = FALSE) %>%
-  group_by(year) %>%
-  # count(across(all_of(columns), ~.x), sort = TRUE) %>%
-  count(n_gram, sort = TRUE) %>%
+  separate(n_gram, columns, sep = " ", remove = FALSE) %>%
+  count(across(all_of(columns), ~.x), sort = TRUE) %>%
   mutate(rank = row_number(),
          total = sum(n),
          t_freq = n/total)
@@ -173,24 +173,15 @@ head(pub_ngrams)
 # Create the graph using igraph
 ngram_graph <- pub_ngrams %>%
   filter(rank < breath) %>%
-  filter(year > time_window) %>%
   graph_from_data_frame()
 
-
-# Create the graph using visNetworks
 
 library(visNetwork)
 
 # Create a data frame for nodes
 node_df <- data.frame(id = V(ngram_graph)$name, 
                       size = 10, 
-                      label = V(ngram_graph)$name)#,
-                      # title = paste("Rank:", V(ngram_graph)$rank, "<br>",
-                      #               "Year:", V(ngram_graph)$year))
-# rank and year are not properly displayed in the final graphic. It seems that 
-# n_gram graph generates lists with different lenghts and the mapping between
-# variables and their ranks is broken.
-
+                      label = V(ngram_graph)$name)
 
 # Create a data frame for edges
 edge_df <- data.frame(from = as.character(get.edgelist(ngram_graph)[,1]), 
@@ -210,8 +201,53 @@ visNetwork(nodes = node_df, edges = edge_df,
   visEdges(arrows = "to") %>%
   
   # Add a tooltip
-  visInteraction(hover = TRUE,
-                 navigationButtons = TRUE) 
+  visInteraction(hover = TRUE) 
+
+
+# Time Oriented Networks
+pub_ngrams <- pub_dat %>%
+  ungroup() %>%
+  unnest_tokens(n_gram, pub_comp, token = "ngrams", n = gram_l) %>%
+  group_by(year) %>%
+  count(n_gram, sort = TRUE) %>%
+  mutate(rank = row_number(),
+         total = sum(n),
+         t_freq = n/total)
+head(pub_ngrams)
+
+# Create the graph using igraph
+ngram_graph <- pub_ngrams %>%
+  filter(rank < breath) %>%
+  filter(year > time_window) %>%
+  graph_from_data_frame()
+
+library(visNetwork)
+
+# Create a data frame for nodes
+node_df <- data.frame(id = V(ngram_graph)$name, 
+                      size = 10, 
+                      label = V(ngram_graph)$name)
+
+# Create a data frame for edges
+edge_df <- data.frame(from = as.character(get.edgelist(ngram_graph)[,1]), 
+                      to = as.character(get.edgelist(ngram_graph)[,2]))
+
+# Create a visNetwork object
+visNetwork(nodes = node_df, edges = edge_df, 
+           width = "100%", height = "600px") %>%
+  
+  # Add physics layout and stabilization
+  visPhysics(stabilization = TRUE) %>%
+  
+  # Add labels for nodes
+  visNodes(label = "label", title = "title", font = list(size = 15)) %>%
+  
+  # Customize edges
+  visEdges(arrows = "to") %>%
+  
+  # Add a tooltip
+  visInteraction(hover = TRUE) 
+
 
 # source: https://cran.r-project.org/web/packages/visNetwork/vignettes/Introduction-to-visNetwork.html
 
