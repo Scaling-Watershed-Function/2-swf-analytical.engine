@@ -5,6 +5,13 @@ librarian::shelf(utils,
                  dplyr, 
                  zen4R)
 
+# Local import and export paths
+
+raw_data <- "../1-swf-knowledge.base/assets/data/raw" 
+
+processed_data <- "../1-swf-knowledge.base/assets/data/processed"
+
+
 # Create a temporary directory to store the heavy data from Zenodo
 temp_dir <- tempdir()
 
@@ -45,10 +52,12 @@ colnames(summer_dat) <- un_colnames
 
 resp_dat <- rbind(annual_dat,spring_dat,summer_dat)
 
+write.csv(resp_dat,file=paste(raw_data,"230406_son_etal_22_results_zen.csv",sep = '/'),
+          row.names = FALSE)
+
 # Let's now merge this data with the land use data:
 
-lnd_dat <- read_csv(file=paste("../1-swf-knowledge.base/assets/data/processed",
-                               "230324_inf_cont_lnd.csv",sep = "/"),
+lnd_dat <- read_csv(file=paste(processed_data,"230324_inf_cont_lnd.csv",sep = "/"),
                     show_col_types = FALSE)
 
 main_hbgc_dat <- merge(resp_dat,lnd_dat,by="comid")
