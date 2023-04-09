@@ -250,6 +250,8 @@ visNetwork(nodes = node_df, edges = edge_df,
 
 
 # source: https://cran.r-project.org/web/packages/visNetwork/vignettes/Introduction-to-visNetwork.html
+# Plotting networks with igraph:
+# https://kateto.net/netscix2016.html
 
 ################################################################################
 

@@ -1,4 +1,10 @@
 #To filter a dataset without downloading it, you can use the readRDS() function in R to read the RDS file directly from the web. Here's an example code to filter the dataset in the provided URL:
+# How to download files from websites using R
+# https://www.youtube.com/watch?v=BK_JBk_l5uQ&t=940s
+# Using Selenium in R
+# https://www.youtube.com/watch?v=U1BrIPmhx10
+# zen4R vignette:
+# https://cran.r-project.org/web/packages/zen4R/vignettes/zen4R.html
 
 # Load required packages
 librarian::shelf(utils, 

@@ -46,6 +46,15 @@ theme_httn<-  theme(axis.text=element_text(colour="black",size=22),
                     legend.background = element_blank(),
                     legend.key.size = unit(1.0, 'lines'),#Changing spacing between legend keys
                     legend.title = element_text())
+
+
+# Creating breaks for logarithmic scale 
+# (see: https://r-graphics.org/recipe-axes-axis-log)
+
+breaks <- 10^(-10:10)
+breaks_c <- 10^seq(-10,10,by=4)
+minor_breaks <- rep(1:9, 21)*(10^rep(-10:10, each=9))
+
 set.seed(2703)
 
 #Data:
@@ -56,9 +65,10 @@ raw_data <- "../1-swf-knowledge.base/assets/data/raw"
 processed_data <- "../1-swf-knowledge.base/assets/data/processed"
 assets_figs <- "../1-swf-knowledge.base/assets/plots"
 
-#header info
+#header info (data dictionary)
 
-# pending!!!!!
+heading_dat <- read_csv(paste(processed_data,"guerrero_etal_swf_dd.csv", sep = '/'),
+                        show_col_types = FALSE)
 
 #values
 hbgc_pnw <- read_csv(paste(processed_data,"230406_hbgc_pnw_land.csv", sep = "/"),
@@ -67,14 +77,68 @@ hbgc_pnw <- read_csv(paste(processed_data,"230406_hbgc_pnw_land.csv", sep = "/")
 # Let's start by looking at annual values and how many data points we have per 
 # watershed:
 
-ann_hbgc_pnw <- filter(hbgc_pnw,time_type=="annual")
+n_yakima <- nrow(filter(hbgc_pnw,huc_4=="1703"))/3 #5293
+n_willamette <-nrow(filter(hbgc_pnw,huc_4=="1709"))/3#8176
 
-n_yakima <- nrow(filter(ann_hbgc_pnw,huc_4=="1703")) #5293
-n_willamette <-nrow(filter(ann_hbgc_pnw,huc_4=="1709"))#8176
 
 
 # Now, let's take a quick look at the scaling relationships that could be observed
 # through these data sets:
+
+local_scaling <- hbgc_pnw %>% 
+  filter(time_type=="spring") %>% 
+  ggplot(aes(cum_div_area_km2,logtotco2g_m2_day,color = basin))+
+  geom_point(alpha = 0.5)+
+  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Total sediment respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  scale_x_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  # scale_y_log10(breaks = breaks_c, 
+  #               limits = c(10^-6,10^6),
+  #               labels = trans_format("log10", math_format(10^.x)))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  facet_wrap(~basin,ncol=2)+
+  theme_httn+
+  theme(legend.position = "none")
+local_scaling
+
+# Role of landscape on local scaling
+
+land_scaling <- ann_hbgc_pnw %>% 
+  filter(time_type=="annual") %>% 
+  dplyr::select(cum_div_area_km2,
+                logtotco2g_m2_day,
+                basin,
+                w_forest_scp,
+                w_grass_scp,
+                w_shrub_scp,
+                w_water_scp,
+                w_human_scp,
+                w_barren_scp) %>% 
+  gather(.,k="Landscape",value = "Cover",c(4:9),factor_key = TRUE) %>% 
+  ggplot(aes(cum_div_area_km2,logtotco2g_m2_day,color = Landscape, alpha = Cover))+
+  geom_point()+
+  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Total sediment respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  scale_x_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  facet_wrap(basin~Landscape,ncol=6,nrow=2)+
+  theme_httn+
+  theme(legend.position = "none")
+land_scaling
+  
+# Land use per se does not affect the relationship between local respiration rates
+# (i.e. biological activity) and watershed area. The pattern is consistent across
+# different land uses
+  
+  
+  
+
+
+
+
+
 
 # Exploratory plot Cumulative Watershed Function vs. Watershed Area
 
