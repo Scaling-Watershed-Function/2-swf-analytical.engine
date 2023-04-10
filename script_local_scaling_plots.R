@@ -57,6 +57,20 @@ minor_breaks <- rep(1:9, 21)*(10^rep(-10:10, each=9))
 
 set.seed(2703)
 
+# Landscape colors from nlcd color scale
+nlcd_colors_c <- c("#5475a8","#f00f00","#d2cdc0","#38814e","#dcca8f","#fbf65d")
+nlcd_colors_w <- c("#5475a8","#f00f00","#d2cdc0","#38814e","#dcca8f","#fbf65d")
+
+# Source: https://github.com/BuzzFeedNews/us-land-cover/blob/master/nlcd_legend.csv
+
+# NLDC Categories
+nlcd_cat_c <- c("c_water_scp","c_human_scp","c_barren_scp","c_forest_scp","c_shrub_scp","c_grass_scp")
+nlcd_cat_w <- c("w_water_scp","w_human_scp","w_barren_scp","w_forest_scp","w_shrub_scp","w_grass_scp")
+
+# Assigning names to a color scale
+names(nlcd_colors_c) <- nlcd_cat_c
+names(nlcd_colors_w) <- nlcd_cat_w
+
 #Data:
 
 # Local import and export paths
@@ -74,37 +88,148 @@ heading_dat <- read_csv(paste(processed_data,"guerrero_etal_swf_dd.csv", sep = '
 hbgc_pnw <- read_csv(paste(processed_data,"230406_hbgc_pnw_land.csv", sep = "/"),
                      show_col_types = FALSE)
 
+spat_stdy <- read_csv(paste(raw_data,"230110_yrb_spatial_camp.csv", sep = "/"),
+                      show_col_types = FALSE)
+
+ykm_spc <- dplyr::select(spat_stdy,COMID,site_ID) %>% 
+  rename(comid = COMID,
+         site_id = site_ID) %>% 
+  left_join(.,hbgc_pnw, by = "comid") %>% 
+  na.omit(.)
+
+
 # Let's start by looking at annual values and how many data points we have per 
 # watershed:
 
 n_yakima <- nrow(filter(hbgc_pnw,huc_4=="1703"))/3 #5293
 n_willamette <-nrow(filter(hbgc_pnw,huc_4=="1709"))/3#8176
 
+# Area definitions
 
+# Total upstream area vs. Cumulative area to watershed boundary
+
+p <- ggplot(filter(hbgc_pnw, time_type=="annual"),
+            aes(x = tot_ups_area_km2,
+                y = cum_div_area_km2,
+                color = basin))+
+  geom_point()+
+  scale_y_log10()+
+  scale_x_log10()+
+  facet_wrap(~basin, ncol=2)
+p
+
+# cum_div_area_km2 and tot_ups_area_km2 are virtually the same, except for a 
+# few cases in both Willamette and Yakima data sets. We will use cum_div_area_km2
+# since these values include areas reaching to the physical water boundary. That
+# includes areas upstream of headwaters nodes that are not included in tot_ups_area_km2.
+# The reason for this inclusion, is that we will normalize aquatic metabolism per 
+# total terrestrial area to make it relative to ecosystem NPP (Wollheim et al., 2022).
+
+# Incremental catchment area (including sinks) vs. Incremental flow line area 
+
+p1 <- ggplot(filter(hbgc_pnw, time_type=="annual"),
+            aes(x = cat_sink_area_km2,
+                y = inc_flowline_area_km2,
+                color = basin))+
+  geom_point()+
+  scale_y_log10()+
+  scale_x_log10()+
+  facet_wrap(~basin, ncol=2)
+p1
+
+# Incremental catchment area including sinks (`cat_sink_area_km2`) is the immediate 
+# area draining to the flowline identified by a COMID (`comid`) and it excludes the 
+# upstream area draining to that point. The term sink refers to "off-network
+# sink features that capture the total drainage area to a sink because there are no 
+# upstream features". For the Willamette and the Yakima River basins these two 
+# values are interchangeable, as it seems that not important sink features are 
+# present in our data set. I have included these values in our data set
+# for further comparison between the river corridor ecosystem vs. the watershed ecosystem.
+# In terms of cumulative effects, `cat_sink_area_km2` accumulates around the fluvial
+# corridor, while `cum_div_area_km2` accumulates across watershed boundaries.
+
+
+# Physical network attributes
+
+# Flow line lengths
+
+flow_line_p <- hbgc_pnw %>% 
+  filter(time_type=="annual") %>% 
+  ggplot(aes(x = as.factor(stream_order),
+             y = flowline_length_km, 
+             color = as.factor(stream_order),
+             fill = as.factor(stream_order)))+
+  scale_y_log10()+
+  geom_boxplot(alpha = 0.5)+
+  facet_wrap(~basin, ncol = 2)
+flow_line_p 
+
+# It is surprising to find that the average length of flowlines is similar across
+# stream orders. I would expect that on average, the flowline length would be shorter
+# for low order streams. According to this data, some first order streams can have 
+# a flow line length of 10 km+. 
+
+tot_flow_line_p <- hbgc_pnw %>% 
+  filter(time_type=="annual") %>% 
+  ggplot(aes(x = as.factor(stream_order),
+             y = tot_flowline_length_km, 
+             color = as.factor(stream_order),
+             fill = as.factor(stream_order)))+
+  scale_y_log10()+
+  geom_boxplot(alpha = 0.5)+
+  facet_wrap(~basin, ncol = 2)
+tot_flow_line_p 
+
+# Let's compare with catchment area
+flow_line_area_p <- hbgc_pnw %>% 
+  filter(time_type=="annual") %>% 
+  ggplot(aes(x = inc_flowline_area_km2,
+             y = flowline_length_km, 
+             color = as.factor(stream_order)))+
+  scale_x_log10()+
+  scale_y_log10()+
+  geom_point()+
+  facet_wrap(basin~stream_order, ncol = 7, nrow = 2)+
+  theme(legend.position = "none")
+flow_line_area_p 
+
+tot_flow_line_area_p <- hbgc_pnw %>% 
+  filter(time_type=="annual") %>% 
+  ggplot(aes(x = cum_div_area_km2,
+             y = tot_flowline_length_km, 
+             color = as.factor(stream_order)))+
+  scale_x_log10()+
+  scale_y_log10()+
+  geom_point()+
+  facet_wrap(basin~stream_order, ncol = 7, nrow = 2)+
+  theme(legend.position = "none")
+tot_flow_line_area_p 
+
+# The total flowline lenght does 
 
 # Now, let's take a quick look at the scaling relationships that could be observed
 # through these data sets:
 
 local_scaling <- hbgc_pnw %>% 
-  filter(time_type=="spring") %>% 
-  ggplot(aes(cum_div_area_km2,logtotco2g_m2_day,color = basin))+
+  filter(time_type=="annual") %>% 
+  ggplot(aes(cum_div_area_km2,10^logtotco2g_m2_day,color = basin))+
   geom_point(alpha = 0.5)+
+  geom_point(data = ykm_spc,aes(cum_div_area_km2,10^logtotco2g_m2_day), 
+             inherit.aes = FALSE)+
   xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
   ylab(expression(bold(paste("Total sediment respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
   scale_x_log10(breaks = breaks, 
                 labels = trans_format("log10", math_format(10^.x)))+
-  # scale_y_log10(breaks = breaks_c, 
-  #               limits = c(10^-6,10^6),
-  #               labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks_c,
+                labels = trans_format("log10", math_format(10^.x)))+
   annotation_logticks(size = 0.75, sides = "tblr")+
   facet_wrap(~basin,ncol=2)+
   theme_httn+
   theme(legend.position = "none")
 local_scaling
 
-# Role of landscape on local scaling
-
-land_scaling <- ann_hbgc_pnw %>% 
+# Role of land use on local scaling
+land_scaling <- hbgc_pnw %>% 
   filter(time_type=="annual") %>% 
   dplyr::select(cum_div_area_km2,
                 logtotco2g_m2_day,
@@ -114,65 +239,77 @@ land_scaling <- ann_hbgc_pnw %>%
                 w_shrub_scp,
                 w_water_scp,
                 w_human_scp,
-                w_barren_scp) %>% 
+                w_barren_scp,
+                logRT_total_hz_s) %>% 
   gather(.,k="Landscape",value = "Cover",c(4:9),factor_key = TRUE) %>% 
-  ggplot(aes(cum_div_area_km2,logtotco2g_m2_day,color = Landscape, alpha = Cover))+
+  ggplot(aes(x = cum_div_area_km2,
+             y = 10^logtotco2g_m2_day,
+             color = Landscape, 
+             alpha = Cover,
+             size = logRT_total_hz_s))+
   geom_point()+
+  geom_point(data = ykm_spc,aes(cum_div_area_km2,10^logtotco2g_m2_day), 
+             inherit.aes = FALSE)+
+  scale_color_manual(values = nlcd_colors_w)+
   xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
   ylab(expression(bold(paste("Total sediment respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
   scale_x_log10(breaks = breaks, 
                 labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks_c,
+                labels = trans_format("log10", math_format(10^.x)))+
   annotation_logticks(size = 0.75, sides = "tblr")+
-  facet_wrap(basin~Landscape,ncol=6,nrow=2)+
+  # facet_wrap(basin~Landscape, ncol=6, nrow = 2)+
+  facet_wrap(~basin, ncol = 2)+
   theme_httn+
-  theme(legend.position = "none")
+  theme(legend.position = "none",
+        panel.background = element_rect(fill = "snow"))
 land_scaling
   
 # Land use per se does not affect the relationship between local respiration rates
 # (i.e. biological activity) and watershed area. The pattern is consistent across
 # different land uses
   
+# Spatial campaign data set
+ykm_spc_scaling <- ykm_spc %>% 
+  filter(time_type=="summer") %>% 
+  dplyr::select(cum_div_area_km2,
+                logtotco2g_m2_day,
+                basin,
+                w_forest_scp,
+                w_grass_scp,
+                w_shrub_scp,
+                w_water_scp,
+                w_human_scp,
+                w_barren_scp,
+                logRT_total_hz_s) %>% 
+  gather(.,k="Landscape",value = "Cover",c(4:9),factor_key = TRUE) %>% 
+  ggplot(aes(x = cum_div_area_km2,
+             y = 10^logtotco2g_m2_day,
+             color = Landscape, 
+             alpha = Cover,
+             size = logRT_total_hz_s))+
+  geom_point()+
+  scale_color_manual(values = nlcd_colors_w)+
+  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Total sediment respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  scale_x_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks_c,
+                labels = trans_format("log10", math_format(10^.x)))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  theme_httn+
+  theme(legend.position = "none",
+        panel.background = element_rect(fill = "snow"))
+ykm_spc_scaling
   
-  
 
 
 
 
 
 
-# Exploratory plot Cumulative Watershed Function vs. Watershed Area
 
-# exploratory plot
 
-p <- ggplot(bgc_cln,aes(wsd_are,crsp_wsa, color = model))+
-  geom_point(alpha = 0.5)+
-  scale_x_log10()+
-  scale_y_log10()+
-  geom_abline(intercept = -3, slope = 1)+
-  facet_wrap(~model)
-p
-
-# At a first glance the overall behavior seems consistent across the two data sets, except
-# for the extremely low values (below 1-e-07) predicted by the random forest model.
-
-summary(filter(bgc_cln,model=="rff"))
-
-# We have zero values for cumulative watershed respiration. Let's check how many of them we have:
-length(filter(bgc_cln,crsp_wsa==0))
-
-# 51 in total. 
-
-#Let's try the exploratory plot again:
-p <- ggplot(filter(bgc_cln,crsp_wsa>0),aes(wsd_are,crsp_wsa, color = model))+
-  geom_point(alpha = 0.5)+
-  scale_x_log10()+
-  scale_y_log10()+
-  geom_abline(intercept = -3, slope = 1)+
-  facet_wrap(~model)
-p
-
-# The original data needs to be tidy up with respect to factor levels for land 
-# cover to make it into a long format
 
 
 ################################################################################
