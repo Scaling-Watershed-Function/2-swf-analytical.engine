@@ -36,10 +36,10 @@ theme_httn<-  theme(axis.text=element_text(colour="black",size=22),
                     axis.title = element_text(size = 32, face = "bold"),
                     panel.grid.minor= element_line(colour = "gray", linetype = "dotted"), 
                     panel.grid.major = element_line(colour = "gray", linetype = "dashed"),
-                    panel.border = element_rect(fill=NA, colour = "black", linewidth = 1.5),
+                    panel.border = element_rect(fill=NA, colour = "black", size = 1.5),
                     panel.background=element_rect(fill="white"),
                     axis.ticks.length = unit(0.254, "cm"),
-                    axis.ticks = element_line(colour = "black", linewidth = 1), 
+                    axis.ticks = element_line(colour = "black", size = 1), 
                     axis.line = element_line(colour = "black"),
                     legend.position = c(0.85,0.25),
                     legend.direction = "vertical",
@@ -161,8 +161,18 @@ flow_line_p <- hbgc_pnw %>%
              fill = as.factor(stream_order)))+
   scale_y_log10()+
   geom_boxplot(alpha = 0.5)+
-  facet_wrap(~basin, ncol = 2)
+  facet_wrap(~basin, ncol = 2)+
+  theme(legend.position = "none")
 flow_line_p 
+
+flow_lines <- hbgc_pnw %>% 
+  filter(time_type=="annual") %>% 
+  select(comid,
+         flowline_length_km,
+         stream_order) %>% 
+  filter(.,stream_order == 1)
+
+write.csv(flow_lines,paste(raw_data,"flow_lines.csv",sep = "/"),row.names = FALSE)
 
 # It is surprising to find that the average length of flowlines is similar across
 # stream orders. I would expect that on average, the flowline length would be shorter
