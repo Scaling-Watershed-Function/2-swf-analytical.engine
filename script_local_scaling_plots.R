@@ -32,14 +32,14 @@ librarian::shelf(tidyverse,# for plotting
                  Hmisc,# Harrell's miscellaneaous for stats
                  gtable)# To manipulate ggplot objects
 
-theme_httn<-  theme(axis.text=element_text(colour="black",size=22),
-                    axis.title = element_text(size = 32, face = "bold"),
+theme_httn<-  theme(axis.text=element_text(colour="black",size=10),
+                    axis.title = element_text(size = 12, face = "bold"),
                     panel.grid.minor= element_line(colour = "gray", linetype = "dotted"), 
                     panel.grid.major = element_line(colour = "gray", linetype = "dashed"),
-                    panel.border = element_rect(fill=NA, colour = "black", size = 1.5),
+                    panel.border = element_rect(fill=NA, colour = "black", linewidth = 1.5),
                     panel.background=element_rect(fill="white"),
                     axis.ticks.length = unit(0.254, "cm"),
-                    axis.ticks = element_line(colour = "black", size = 1), 
+                    axis.ticks = element_line(colour = "black", linewidth = 1), 
                     axis.line = element_line(colour = "black"),
                     legend.position = c(0.85,0.25),
                     legend.direction = "vertical",
@@ -94,7 +94,10 @@ spat_stdy <- read_csv(paste(raw_data,"230110_yrb_spatial_camp.csv", sep = "/"),
 ykm_spc <- dplyr::select(spat_stdy,COMID,site_ID) %>% 
   rename(comid = COMID,
          site_id = site_ID) %>% 
-  left_join(.,hbgc_pnw, by = "comid") %>% 
+  left_join(.,
+             hbgc_pnw %>% 
+               filter(time_type=="summer"),
+             by = "comid") %>% 
   na.omit(.)
 
 
@@ -108,7 +111,7 @@ n_willamette <-nrow(filter(hbgc_pnw,huc_4=="1709"))/3#8176
 
 # Total upstream area vs. Cumulative area to watershed boundary
 
-p <- ggplot(filter(hbgc_pnw, time_type=="annual"),
+p <- ggplot(filter(hbgc_pnw, time_type=="summer"),
             aes(x = tot_ups_area_km2,
                 y = cum_div_area_km2,
                 color = basin))+
@@ -127,7 +130,7 @@ p
 
 # Incremental catchment area (including sinks) vs. Incremental flow line area 
 
-p1 <- ggplot(filter(hbgc_pnw, time_type=="annual"),
+p1 <- ggplot(filter(hbgc_pnw, time_type=="summer"),
             aes(x = cat_sink_area_km2,
                 y = inc_flowline_area_km2,
                 color = basin))+
@@ -154,7 +157,7 @@ p1
 # Flow line lengths
 
 flow_line_p <- hbgc_pnw %>% 
-  filter(time_type=="annual") %>% 
+  filter(time_type=="summer") %>% 
   ggplot(aes(x = as.factor(stream_order),
              y = flowline_length_km, 
              color = as.factor(stream_order),
@@ -166,7 +169,7 @@ flow_line_p <- hbgc_pnw %>%
 flow_line_p 
 
 flow_lines <- hbgc_pnw %>% 
-  filter(time_type=="annual") %>% 
+  filter(time_type=="summer") %>% 
   select(comid,
          flowline_length_km,
          stream_order) %>% 
@@ -180,14 +183,18 @@ write.csv(flow_lines,paste(raw_data,"flow_lines.csv",sep = "/"),row.names = FALS
 # a flow line length of 10 km+. 
 
 tot_flow_line_p <- hbgc_pnw %>% 
-  filter(time_type=="annual") %>% 
+  filter(time_type=="summer") %>% 
   ggplot(aes(x = as.factor(stream_order),
              y = tot_flowline_length_km, 
              color = as.factor(stream_order),
              fill = as.factor(stream_order)))+
   scale_y_log10()+
+  labs(y = "Cumulative stream length (km)",
+       x = "Stream Order")+
   geom_boxplot(alpha = 0.5)+
-  facet_wrap(~basin, ncol = 2)
+  facet_wrap(~basin, ncol = 2)+
+  theme_httn+
+  theme(legend.position = "none")
 tot_flow_line_p 
 
 # Let's compare with catchment area
@@ -221,7 +228,7 @@ tot_flow_line_area_p
 # through these data sets:
 
 local_scaling <- hbgc_pnw %>% 
-  filter(time_type=="annual") %>% 
+  filter(time_type=="summer") %>% 
   ggplot(aes(cum_div_area_km2,10^logtotco2g_m2_day,color = basin))+
   geom_point(alpha = 0.5)+
   geom_point(data = ykm_spc,aes(cum_div_area_km2,10^logtotco2g_m2_day), 
@@ -240,7 +247,7 @@ local_scaling
 
 # Role of land use on local scaling
 land_scaling <- hbgc_pnw %>% 
-  filter(time_type=="annual") %>% 
+  filter(time_type=="summer") %>% 
   dplyr::select(cum_div_area_km2,
                 logtotco2g_m2_day,
                 basin,
@@ -255,11 +262,10 @@ land_scaling <- hbgc_pnw %>%
   ggplot(aes(x = cum_div_area_km2,
              y = 10^logtotco2g_m2_day,
              color = Landscape, 
-             alpha = Cover,
-             size = logRT_total_hz_s))+
+             alpha = Cover))+
   geom_point()+
-  geom_point(data = ykm_spc,aes(cum_div_area_km2,10^logtotco2g_m2_day), 
-             inherit.aes = FALSE)+
+  # geom_point(data = ykm_spc,aes(cum_div_area_km2,10^logtotco2g_m2_day), 
+  #            inherit.aes = FALSE)+
   scale_color_manual(values = nlcd_colors_w)+
   xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
   ylab(expression(bold(paste("Total sediment respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
@@ -268,8 +274,8 @@ land_scaling <- hbgc_pnw %>%
   scale_y_log10(breaks = breaks_c,
                 labels = trans_format("log10", math_format(10^.x)))+
   annotation_logticks(size = 0.75, sides = "tblr")+
-  # facet_wrap(basin~Landscape, ncol=6, nrow = 2)+
-  facet_wrap(~basin, ncol = 2)+
+  facet_wrap(basin~Landscape, ncol=6, nrow = 2)+
+  # facet_wrap(~basin, ncol = 2)+
   theme_httn+
   theme(legend.position = "none",
         panel.background = element_rect(fill = "snow"))
@@ -309,9 +315,176 @@ ykm_spc_scaling <- ykm_spc %>%
   annotation_logticks(size = 0.75, sides = "tblr")+
   theme_httn+
   theme(legend.position = "none",
-        panel.background = element_rect(fill = "snow"))
+        panel.background = element_rect(fill = "white"))
 ykm_spc_scaling
   
+
+#########################################################################################
+# Interaction between landscape heterogeneity, residence time, and hyporheic exchange
+# as related to scaling behavior
+#########################################################################################
+
+new.labs <- c("HZt-Q10","HZt-Q20", "HZt-Q30","HZt-Q40","HZt-Q50",
+              "HZt-Q60","HZt-Q70","HZt-Q80+")
+names(new.labs) <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80+")
+
+my_dcolors <- c("#a6c8ff","#78a9ff","#4589ff","#0f62fe",
+                "#00539a","#003a6d","#012749","#061727")
+
+
+hbgc_pnw <- hbgc_pnw %>% 
+  mutate(rt_cat = factor(Hmisc::cut2(logRT_total_hz_s, g = 8),labels = new.labs))
+  
+
+# exploratory plot
+
+p <- ggplot(data = filter(hbgc_pnw, time_type == "summer"),
+            aes(tot_ups_area_km2,
+                10^logtotco2g_m2_day, 
+                color = rt_cat))+
+  geom_point(alpha = 0.5)+
+  geom_point(data = ykm_spc,aes(tot_ups_area_km2,10^logtotco2g_m2_day), 
+             inherit.aes = FALSE, size = 0.5)+
+  geom_smooth(method = "lm")+
+  scale_x_log10()+
+  scale_y_log10()+
+  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Total sediment respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  scale_color_manual(values = my_dcolors)+
+  geom_abline(intercept = -3, slope = 1)+
+  facet_wrap(~basin, ncol = 2)+
+  # facet_wrap(basin~rt_cat,ncol = 8)+
+  theme_httn+
+  theme(legend.position = "none")
+p
+
+# Inset plot
+ent_quant_i <- ggplot(bgc_cln,aes(wsd_are,
+                                  crsp_wsa,
+                                  color=ent_cat))+
+  geom_smooth(method="lm",fullrange = TRUE, alpha = 0.3)+
+  scale_x_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks_c, 
+                limits = c(10^-6,10^6),
+                labels = trans_format("log10", math_format(10^.x)))+
+  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Cumulative total respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  scale_color_manual(values = my_mcolors)+
+  geom_abline(slope=1.0, color = "red", linetype = "dashed", size = 1.5)+
+  guides(color=guide_legend(title = "Landscape Entropy\n(quartiles)"))+
+  theme_httn+
+  theme(legend.position ="none",
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        plot.title = element_text(size = 16))+
+  guides(alpha = "none")
+ent_quant_i
+
+ent_ins <- ggplotGrob(ent_quant_i)
+
+# Main plot
+ent_quant <- ggplot(bgc_cln,aes(wsd_are,
+                                crsp_wsa,
+                                color=ent_cat))+
+  geom_point(size = 2.5,aes(alpha = hrt))+
+  # geom_smooth(method="lm",fullrange = TRUE, se=FALSE)+
+  # facet_wrap(~ent_cat,nrow = 2)+
+  # geom_point(aes(alpha=p_frt_t), size = 2.5)+
+  # geom_point(aes(alpha=p_shb_t), size = 2.5)+
+  # geom_point(aes(alpha=p_ant_t), size = 2.5)+
+  # geom_smooth(method="lm",fullrange = TRUE, se=FALSE)+
+  scale_x_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks_c, 
+                limits = c(10^-6,10^6),
+                labels = trans_format("log10", math_format(10^.x)))+
+  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Cumulative total respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  annotation_custom(
+    grob = ent_ins,
+    xmin = 2,
+    xmax = 4,
+    ymin = -6,
+    ymax = -2) +
+  scale_color_manual(values = my_mcolors)+
+  geom_abline(slope=1.0, color = "red", linetype = "dashed", size = 1.5)+
+  guides(color=guide_legend(title = "Landscape Entropy\n(quartiles)"))+
+  theme_httn+
+  theme(legend.position =c(0.88,0.53),
+        # panel.grid.minor= element_blank(), 
+        # panel.grid.major =element_blank(),
+        legend.text = element_text(size=16),
+        legend.title = element_text(size=18),
+        plot.title = element_text(size = 16),
+        strip.text = element_text(size = 18, face = "bold"))+
+  guides(alpha = "none")
+ent_quant
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
