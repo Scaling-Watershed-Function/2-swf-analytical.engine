@@ -102,7 +102,7 @@ flow_line_p <- ggplot(nhdp_2_pnw_nas,
 flow_line_p
   
 # Cummulative flowline length and stream order
-tot_flow_line_p <- ggplot(nhdp_2_pnw_na,
+tot_flow_line_p <- ggplot(nhdp_2_pnw_nas,
                       aes(x = as.factor(stream_order),
                           y = tot_flowline_length_km,
                           color = as.factor(stream_order),
@@ -113,7 +113,7 @@ tot_flow_line_p <- ggplot(nhdp_2_pnw_na,
 tot_flow_line_p
 
 # flowline length and catchment area
-flow_line_area_p <- ggplot(nhdp_2_pnw_na,
+flow_line_area_p <- ggplot(nhdp_2_pnw_nas,
                            aes(x = catch_area_km2,
                                y = flowline_length_km,
                                color = as.factor(stream_order),
@@ -128,8 +128,21 @@ flow_line_area_p <- ggplot(nhdp_2_pnw_na,
   # facet_wrap(~huc_4, ncol = 2)
 flow_line_area_p
 
+
+# Flowline length and watershed area
+flow_line_w_area_p <- ggplot(nhdp_2_pnw_nas,
+                               aes(x = tot_ups_area_km2,
+                                   y = flowline_length_km,
+                                   color = as.factor(stream_order),
+                                   fill = as.factor(stream_order)))+
+  geom_point(alpha = 0.5)+
+  scale_x_log10()+
+  scale_y_log10()+
+  facet_wrap(~huc_4, ncol = 2)
+flow_line_w_area_p
+
 # Cumulative Flowline length and watershed area
-tot_flow_line_area_p <- ggplot(nhdp_2_pnw_na,
+tot_flow_line_area_p <- ggplot(nhdp_2_pnw_nas,
                                aes(x = tot_ups_area_km2,
                                    y = tot_flowline_length_km,
                                    color = as.factor(stream_order),
@@ -143,7 +156,7 @@ tot_flow_line_area_p
 # Mean annual precipitation and stream orders (to be used as part of the calculation
 # of bankfull width)
 
-map_order_p <- ggplot(nhdp_2_pnw_na,
+map_order_p <- ggplot(nhdp_2_pnw_nas,
                       aes(x = mean_annual_precp, 
                           fill = as.factor(stream_order),
                           color = as.factor(stream_order)))+
@@ -159,7 +172,7 @@ map_order_p
 
 # W = 0.177(A^0.397)(MAP^0.453) with precipt in cm/year
 
-nhdp_2_pnw_na <- nhdp_2_pnw_na %>% 
+nhdp_2_pnw_na <- nhdp_2_pnw_nas %>% 
   mutate(bnkf_width_m = 0.177*(tot_ups_area_km2^0.397)*(mean_annual_precp/10)^0.453) %>% 
   mutate(stream_area_m2 = (flowline_length_km/10)*bnkf_width_m)
 
@@ -177,7 +190,7 @@ stream_area_p
 # It seems that we have some entities (comids) with total stream area = 0. Let's
 # take a look
 
-area_0 <- nhdp_2_pnw_na %>% 
+area_0 <- nhdp_2_pnw_nas %>% 
   filter(tot_ups_area_km2==0)
 area_0
 
@@ -186,7 +199,7 @@ summary(area_0)
 # 43 data points with short stream lengths, order 1, with a total upstream area = 0.Yet these
 # points have non-zero mean annual runoff
 
-runoff_p <- ggplot(nhdp_2_pnw_na,
+runoff_p <- ggplot(nhdp_2_pnw_nas,
                   aes(x = tot_flowline_length_km,
                       y = mean_annual_runoff,
                       color = as.factor(stream_order)))+
@@ -198,7 +211,7 @@ runoff_p
 # I will replace the missing areas with the predicted value from flowline length and catchment
 # area
 
-reg_dat <- filter(nhdp_2_pnw_na,catch_area_km2>0)
+reg_dat <- filter(nhdp_2_pnw_nas,catch_area_km2>0)
 
 # All data with NAs, correspond to catchment areas == 0 km2
 
@@ -218,4 +231,22 @@ pair_plot <- reg_dat %>%
          mean_annual_flow_cfs,
          mean_annual_temp,
          mean_annual_runoff) %>% 
+  mutate(st_ord = stream_order,
+         log_tot_flowline = log(tot_flowline_length_km,10),
+         log_tot_w_area = log(tot_ups_area_km2,10),
+         log_slope = log(slope,10),
+         log_c_area = log(catch_area_km2,10),
+         log_pt = log(mean_annual_precp,10),
+         log_q = log(mean_annual_flow_cfs)) %>% 
+  select(stream_order,
+         log_tot_flowline,
+         log_tot_w_area,
+         log_slope,
+         log_c_area,
+         log_pt,
+         log_q) %>% 
   pairs(.)
+pair_plot
+  
+  pairs(.,c(10:16))
+pair_plot
