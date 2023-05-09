@@ -30,10 +30,15 @@ librarian::shelf(tidyverse,# for plotting
                  scales,# manipulating log scales
                  stringr,# editing text
                  Hmisc,# Harrell's miscellaneaous for stats
-                 gtable)# To manipulate ggplot objects
+                 gtable,# To manipulate ggplot objects
+                 car,#partial residual plots
+                 caret,#variable import
+                 MuMIn, #ensemble models for partial residuals
+                 ggeffects,
+                 fedmatch)# customizable merge
 
-theme_httn<-  theme(axis.text=element_text(colour="black",size=10),
-                    axis.title = element_text(size = 12, face = "bold"),
+theme_httn<-  theme(axis.text=element_text(colour="black",size=22),
+                    axis.title = element_text(size = 32, face = "bold"),
                     panel.grid.minor= element_line(colour = "gray", linetype = "dotted"), 
                     panel.grid.major = element_line(colour = "gray", linetype = "dashed"),
                     panel.border = element_rect(fill=NA, colour = "black", linewidth = 1.5),
@@ -71,6 +76,31 @@ nlcd_cat_w <- c("w_water_scp","w_human_scp","w_barren_scp","w_forest_scp","w_shr
 names(nlcd_colors_c) <- nlcd_cat_c
 names(nlcd_colors_w) <- nlcd_cat_w
 
+# Creating a quasi-sequential color palette for discrete categories
+# Source: https://www.ibm.com/design/language/color/
+
+my_dcolors <- c("#a6c8ff",
+                "#78a9ff",
+                "#4589ff",
+                "#0f62fe",
+                "#00539a",
+                "#003a6d",
+                "#012749",
+                "#061727")
+
+my_rcolors <- c("#fff1f1","#ffd7d9","#ffb3b8","#fa4d56",
+                "#da1e28","#a2191f","#750e13","#2d0709")
+
+my_mcolors <- c("#ffd6e8",
+                "#ffafd2",
+                "#ff7eb6",
+                "#ee5396",
+                "#d62670",
+                "#9f1853",
+                "#740937",
+                "#510224")
+
+
 #Data:
 
 # Local import and export paths
@@ -85,27 +115,930 @@ heading_dat <- read_csv(paste(processed_data,"guerrero_etal_swf_dd.csv", sep = '
                         show_col_types = FALSE)
 
 #values
-hbgc_pnw <- read_csv(paste(processed_data,"230406_hbgc_pnw_land.csv", sep = "/"),
+bgc_dat_c10 <- read_csv(paste(processed_data,"230507_bgc_dat_c10.csv", sep = "/"),
                      show_col_types = FALSE)
 
-spat_stdy <- read_csv(paste(raw_data,"230110_yrb_spatial_camp.csv", sep = "/"),
+spat_stdy <- read_csv(paste(raw_data,"combined_results_updated_04262023.csv", sep = "/"),
                       show_col_types = FALSE)
 
-ykm_spc <- dplyr::select(spat_stdy,COMID,site_ID) %>% 
-  rename(comid = COMID,
-         site_id = site_ID) %>% 
-  left_join(.,
-             hbgc_pnw %>% 
-               filter(time_type=="summer"),
-             by = "comid") %>% 
-  na.omit(.)
 
+ykm_spc <- spat_stdy %>% 
+  rename(comid = COMID.y) %>% 
+  merge(.,
+        bgc_dat_c10,
+        by = "comid",
+        all.x = TRUE) %>% 
+  select(-COMID.x)
 
+# Checking data
+
+# Watershed area values
+p <- ggplot(ykm_spc,
+            aes(x = totdasqkm,
+                y = wshd_area_km2))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()
+p
+
+#slope values
+p1 <- ggplot(ykm_spc,
+            aes(x = slope,
+                y = reach_slope))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()
+p1
+
+# sediment respiration and watershed area
+p3 <- ggplot(ykm_spc,
+             aes(x = wshd_area_km2,
+                 y =- ERsed_gm2day*stream_area_m2,
+                 size = logRT_total_hz_s))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  scale_x_log10()+
+  scale_y_log10()
+p3
+
+# watershed area and slope
+p4 <- ggplot(ykm_spc,
+             aes(x = wshd_area_km2,
+                 y = reach_slope))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()
+p4
+
+p5 <-  ggplot(bgc_dat_c10,
+              aes(x = wshd_area_km2,
+                  y = reach_slope))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()
+p5
+
+  
 # Let's start by looking at annual values and how many data points we have per 
 # watershed:
 
-n_yakima <- nrow(filter(hbgc_pnw,huc_4=="1703"))/3 #5293
-n_willamette <-nrow(filter(hbgc_pnw,huc_4=="1709"))/3#8176
+n_yakima <- nrow(filter(bgc_dat_c10, basin=="yakima"))
+n_willamette <-nrow(filter(bgc_dat_c10, basin=="willamette"))
+
+################################################################################
+# Calculating Quantiles
+
+
+#I'm going to try calculating the quantiles with Hmisc::cut2, which allows
+# for the inclusion of zeroes
+
+# https://stackoverflow.com/questions/46750635/cut-and-quantile-in-r-in-not-including-zero
+
+qlabel <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80+")
+
+# asigning names to color scale
+names(my_dcolors) <- qlabel
+names(my_mcolors) <- qlabel
+
+bgc_dat_c10 <- bgc_dat_c10 %>% 
+  mutate(res_time = 10^logRT_total_hz_s,
+         hzt_flow = 10^logq_hz_total_m_s,
+         ent_cat = factor(Hmisc::cut2(hrel, g = 8),labels = qlabel),
+         ent_3cat= factor(Hmisc::cut2(h3rel, g = 8),labels = qlabel),
+         rst_cat = factor(Hmisc::cut2(res_time, g = 8),labels = qlabel),
+         hzt_cat = factor(Hmisc::cut2(hzt_flow, g = 8),labels = qlabel))
+
+################################################################################
+# WATERSHED SCALING PLOTS
+################################################################################
+# Test plots
+
+p <- ggplot(data = filter(bgc_dat_c10,
+                          acc_totco2g_km2_day < 1650000),
+            aes(x = wshd_area_km2,
+                y = acc_totco2g_ntw_day, 
+                color = ent_cat))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  scale_color_manual(values = my_mcolors)+
+  geom_abline(slope = 1, intercept = 3)+
+  facet_wrap(~basin, ncol = 2)
+p
+
+p <- ggplot(data = filter(bgc_dat_c10,
+                          acc_totco2g_km2_day < 1650000),
+            aes(x = wshd_area_km2,
+                y = acc_totco2g_km2_day, 
+                color = ent_cat))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  scale_color_manual(values = my_mcolors)+
+  geom_abline(slope = 1, intercept = 3)+
+  facet_wrap(basin~rst_cat, ncol = 8)
+p
+
+
+p1 <- ggplot(data = filter(bgc_dat_c10,
+                          acc_totco2g_km2_day < 1650000),
+            aes(x = wshd_area_km2,
+                y = acc_totco2g_ntw_day, 
+                color = rst_cat))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  scale_color_manual(values = my_dcolors)+
+  geom_abline(slope = 1, intercept = 3)+
+  facet_wrap(basin~rst_cat, ncol = 8)
+p1
+
+
+################################################################################
+# Landscape entropy and scaling
+
+# Inset plot
+ent_quant_i <- ggplot(filter(bgc_dat_c10,
+                             basin == "yakima" &
+                               acc_totco2g_km2_day < 1650000),
+                      aes(x = wshd_area_km2,
+                          y = acc_totco2g_ntw_day,
+                          color = ent_cat))+
+  geom_smooth(method="lm",fullrange = TRUE, alpha = 0.3)+
+  scale_x_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks_c, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Sediment respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  scale_color_manual(values = my_mcolors)+
+  geom_abline(slope = 1, intercept = 2.5, linewidth = 2, linetype = "dashed")+
+  guides(color=guide_legend(title = "Landscape Entropy\n(quartiles)"))+
+  theme_httn+
+  theme(legend.position ="none",
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        plot.title = element_text(size = 16),
+        panel.background = element_blank())+
+  guides(alpha = "none")
+ent_quant_i
+
+ent_ins <- ggplotGrob(ent_quant_i)
+
+# Main Plot
+
+ent_quant <- ggplot(data = filter(bgc_dat_c10,
+                           basin == "yakima" &
+                           acc_totco2g_km2_day < 1650000),
+             aes(x = wshd_area_km2,
+                 y = acc_totco2g_ntw_day, 
+                 color = ent_cat))+
+  geom_point(size = 2.5)+
+  geom_abline(slope = 1, intercept = 3, linewidth = 2, linetype = "dashed")+
+  scale_x_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks_c, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_color_manual(values = my_mcolors)+
+  xlab(expression(bold(paste("Watershed Area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste(" Cumulative"," ",Respiration[Sed],"(",gCO[2]*network^-1*d^-1,")"))))+
+  guides(color=guide_legend(title = "Landscape Entropy\n(quantiles)"))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  annotation_custom(
+    grob = ent_ins,
+    xmin = 2,
+    xmax = 4.25,
+    ymin = -6,
+    ymax = -1) +
+  theme_httn+
+  theme(legend.position =c(0.15,0.75),
+        legend.text = element_text(size=16),
+        legend.title = element_text(size=18),
+        plot.title = element_text(size = 16),
+        strip.text = element_text(size = 18, face = "bold"))
+ent_quant
+
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_scaling_respiration_entropy.png",sep = '/'),
+       width = 12,
+       height = 12,
+       units = "in")
+
+
+#################################################################################
+# Residence time and scaling
+
+# Inset plots with log scales
+
+# https://stackoverflow.com/questions/20271233/how-can-you-get-ggplot2-to-display-an-inset-figure-when-the-main-one-has-a-log-s
+
+
+# Inset plot
+hzt_quant_i <- ggplot(filter(bgc_dat_c10,
+                             basin == "yakima" &
+                               acc_totco2g_km2_day < 1650000),
+                      aes(x = wshd_area_km2,
+                          y = acc_totco2g_ntw_day,
+                          color = rst_cat))+
+  geom_smooth(method="lm",fullrange = TRUE, alpha = 0.3)+
+  scale_x_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks_c, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Sediment respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  scale_color_manual(values = my_dcolors)+
+  geom_abline(slope = 1, intercept = 2.5, linewidth = 2, linetype = "dashed")+
+  guides(color=guide_legend(title = "Residence time (s)\nLog(quantiles)"))+
+  theme_httn+
+  theme(legend.position ="none",
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        plot.title = element_text(size = 16),
+        panel.background = element_blank())+
+  guides(alpha = "none")
+hzt_quant_i
+
+hzt_ins <- ggplotGrob(hzt_quant_i)
+
+# Main Plot
+
+hzt_quant <- ggplot(data = filter(bgc_dat_c10,
+                                  basin == "yakima" &
+                                    acc_totco2g_km2_day < 1650000),
+                    aes(x = wshd_area_km2,
+                        # y = acc_totco2g_ntw_day, 
+                        y =  acc_totco2g_km2_day,
+                        color = rst_cat))+
+  geom_point(size = 2.5)+
+  geom_abline(slope = 1, intercept = 3, linewidth = 2, linetype = "dashed")+
+  scale_x_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks_c, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_color_manual(values = my_dcolors)+
+  xlab(expression(bold(paste("Watershed Area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste(" Cumulative"," ",Respiration[Sed],"(",gCO[2]*network^-1*d^-1,")"))))+
+  guides(color=guide_legend(title = "Residence time\nlog(quantiles)"))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  annotation_custom(
+    grob = hzt_ins,
+    xmin = 2,
+    xmax = 4.25,
+    ymin = -6,
+    ymax = -1) +
+  theme_httn+
+  theme(legend.position =c(0.15,0.75),
+        legend.text = element_text(size=16),
+        legend.title = element_text(size=18),
+        plot.title = element_text(size = 16),
+        strip.text = element_text(size = 18, face = "bold"))
+hzt_quant
+
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_scaling_respiration_res_time.png",sep = '/'),
+       width = 12,
+       height = 12,
+       units = "in")
+
+
+################################################################################
+#LOCAL SCALING PLOTS
+################################################################################
+
+################################################################################
+# Respiration and Watershed Area
+
+rsp_spc_plot <- ggplot(ykm_spc,
+                       aes(x = wshd_area_km2,
+                           y = (10^logtotco2g_m2_day*stream_area_m2)/(wshd_area_km2 * 1000000),
+                           color = logtotco2g_m2_day,
+                           size = logtotco2g_m2_day)) +
+  geom_smooth(data= ykm_spc,
+              aes(x = wshd_area_km2,
+                  y = (10^logtotco2g_m2_day*stream_area_m2)/(wshd_area_km2 * 1000000)),
+              color = "black",
+              method = "lm",
+              alpha = 0.25,
+              inherit.aes = FALSE) +
+  geom_point() +
+  scale_color_viridis_c(limits = c(-3,3), breaks = seq(-3,3,by=1),
+                        name = expression(bold(paste("Log [",gCO[2]*m^-2*d^-1,"]"))))+
+  guides(color= guide_legend(), size=guide_legend())+
+  scale_x_log10(breaks = breaks,
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = 10^seq(-10,10,by=2), 
+                labels = trans_format("log10", math_format(10^.x)))+
+  xlab(expression(bold(paste("Watershed Area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Total"," ",Respiration[Sed]," ","(",gCO[2]*km^-2*d^-1,")"))))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  theme_httn+
+  theme(legend.position = c(0.15,0.25),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 18),
+        legend.background = element_blank(),
+        legend.box.background = element_blank())+
+  scale_size_continuous(limits = c(-3,3), breaks = seq(-3,3,by=1),
+                        name = expression(bold(paste("Log [",gCO[2]*m^-2*d^-1,"]"))),
+                        range = c(2,24)) 
+rsp_spc_plot
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_local_scaling_respiration.png", sep = '/'),
+       width = 12,
+       height = 12,
+       units = "in")
+
+
+################################################################################
+#Respiration and residence time
+
+rsp_spc_rst_plot <- ggplot(ykm_spc,
+                       aes(x = 10^logRT_total_hz_s,
+                           y = 10^logtotco2g_m2_day,
+                           color = logtotco2g_m2_day,
+                           size = logtotco2g_m2_day)) +
+  geom_smooth(data= ykm_spc,
+              aes(x =10^logRT_total_hz_s,
+                  y = 10^logtotco2g_m2_day),
+              color = "black",
+              method = "lm",
+              alpha = 0.25,
+              inherit.aes = FALSE) +
+  scale_size(guide = "none", range = c(2,24)) +
+  geom_point() +
+  scale_color_viridis_c(name = expression(bold(paste("Log [",gCO[2]*m^-2*d^-1,"]"))), 
+                        guide = guide_colorbar(title.position = 'top', title.hjust = 0.5,
+                                               barwidth = 5, barheight = 15)) +
+  scale_x_log10(breaks = breaks,
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = 10^seq(-10,10,by=2), 
+                labels = trans_format("log10", math_format(10^.x)))+
+  xlab("Residence time (seconds)")+
+  ylab(expression(bold(paste("Total sediment respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  theme_httn+
+  theme(legend.position = c(0.15,0.2),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 18))
+rsp_spc_rst_plot
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_local_scaling_respiration_residence_t.png", sep = '/'),
+       width = 12,
+       height = 12,
+       units = "in")
+
+############################### SPATIAL DATA PLOTS ##############################
+
+in_situ_er_wshd_plot <- ggplot(ykm_spc,
+                               aes(x = wshd_area_km2,
+                                   y = ERsed_gm2day,
+                                   color = ERsed_gm2day,
+                                   size = -ERsed_gm2day))+
+  geom_smooth(data= ykm_spc,
+              aes(x = wshd_area_km2,
+                  y = ERsed_gm2day),
+              color = "black",
+              method = "lm",
+              alpha = 0.25,
+              inherit.aes = FALSE) +
+  scale_size(name = expression(bold(gO[2]*m^-2*d^-1,"]")),
+             range = c(2,24))+
+  xlab(expression(bold(paste("Watershed Area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("In-situ"," ",Respiration[sed]," ", "(",gO[2]*m^-2*d^-1, ")"))))+
+  scale_color_viridis_c(option= "plasma",
+                        guide = "none") +
+  scale_x_log10(breaks = breaks,
+                labels = trans_format("log10", math_format(10^.x)))+
+  geom_point()+
+  annotation_logticks(size = 0.75, sides = "tb")+
+  theme_httn+
+  theme(legend.position = c(0.15, 0.25),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 18),
+        axis.title.y = element_text(face = "bold"))
+in_situ_er_wshd_plot
+
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_er_insitu_area.png", sep = '/'),
+       width = 12,
+       height = 12,
+       units = "in")
+
+###############################################################################
+################### Regression Analysis #####################################
+
+tst_dat <-ykm_spc %>% 
+  select(ERsed_gm2day,
+         slope,
+         D50_m,
+         Minidot_Temperature,
+         HOBO_Temperature,
+         Average_Depth_cm,
+         mean_depth_m,
+         discharge_cms,
+         TSS,
+         wshd_area_km2,
+         AridityWs,
+         velocity_ms,
+         PctCrop2016Ws,
+         PctMxFst2016Ws,
+         ctch_basin_slope,
+         stream_order,
+         mean_ann_vel_ms) %>% 
+  filter(ERsed_gm2day<0 &
+           is.na(ERsed_gm2day)==FALSE)
+
+
+tst_mod <- lm(ERsed_gm2day ~ log(wshd_area_km2) + Minidot_Temperature + log(Average_Depth_cm) +
+                log(AridityWs)+D50_m+log(velocity_ms)+ PctMxFst2016Ws + log(TSS),
+              data = tst_dat)
+
+summary(tst_mod)
+
+vif(tst_mod)
+
+# Partial residual plots
+crPlots(tst_mod)
+
+
+# Only in-situ variables
+tst_mod1 <- lm(ERsed_gm2day ~ log(mean_depth_m) + log(velocity_ms) + 
+                 log(discharge_cms) + slope,
+              data = tst_dat)
+
+summary(tst_mod1)
+
+# Partial residual plots
+crPlots(tst_mod1)
+
+# Additional local variables
+
+# Only in-situ variables
+tst_mod2 <- lm(ERsed_gm2day ~ log(mean_depth_m) + log(velocity_ms) + 
+                 log(discharge_cms) + slope + stream_order,
+               data = tst_dat)
+
+summary(tst_mod2)
+
+vif(tst_mod2)
+
+tst_mod3 <- lm(ERsed_gm2day ~ log(mean_depth_m) + log(velocity_ms) + log(wshd_area_km2) + slope,
+               data = tst_dat)
+
+summary(tst_mod3)
+vif(tst_mod3)
+
+crPlots(tst_mod3)
+
+# Partial residual plots
+crPlots(tst_mod3)
+varImp(tst_mod3)
+
+tst_dat$pred_ERsed_gm2day <- tst_mod3$fitted.values
+
+# Regression plot
+reg_plot <- ggplot(tst_dat,
+            aes(x = ERsed_gm2day,
+                y = pred_ERsed_gm2day))+
+  geom_abline(slope = 1, linewidth = 2, color = "darkred")+
+  geom_point(size = 5)+
+  scale_x_continuous(limits = c(-21,0))+
+  scale_y_continuous(limits = c(-21,0))+
+  xlab("Observed")+
+  ylab("Predicted")+
+  annotate("text", x = -5, y = -15, label = "paste(italic(R) ^ 2, \" = .57\")",
+           parse = TRUE, size = 14)+
+  annotate("text", x = -5, y = -19, label = "p < 0.001",
+           parse = TRUE, size = 12)+
+  ggtitle(expression(bold(paste("In-situ"," ",ER[sed]," ", "(",gO[2]*m^-2*d^-1, ")"))))+
+  theme_httn+
+  theme(plot.title = element_text(size = 28))
+reg_plot
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_er_insitu_regression.png", sep = '/'),
+       width = 8,
+       height = 8,
+       units = "in")
+
+
+################################################################################
+####################### Customized Partial Residuals ###########################
+
+# We will match partial residuals based on the ranking of the predictor variables
+# (since the exact values for x in the partial residuals data may be slightly different)
+
+tst_pres <- ykm_spc %>% 
+  select(comid,
+         ERsed_gm2day,
+         velocity_ms,
+         mean_depth_m,
+         discharge_cms,
+         wshd_area_km2,
+         slope) %>% 
+  filter(ERsed_gm2day<0 &
+           is.na(ERsed_gm2day)==FALSE) %>% 
+  mutate(v_rank = rank(velocity_ms, ties.method = "max"),
+         d_rank = rank(mean_depth_m, ties.method = "max"),
+         q_rank = rank(discharge_cms, ties.method = "max"),
+         s_rank = rank(slope, ties.method = "max"),
+         a_rank = rank(wshd_area_km2, ties.method = "max"))
+
+# Velocity
+set.seed(2703)
+x_pr <- ggpredict(tst_mod3, "velocity_ms")
+x_plot_dat <- ggplot_build(plot(x_pr,residuals = TRUE))$data[[1]] %>% 
+  select(x,y) %>% 
+  mutate(x_rank = rank(x, ties.method = "max")) %>% 
+  rename(v_part = y)
+    
+tst_pres <- merge(tst_pres,
+                  x_plot_dat,
+                  by.x = "v_rank",
+                  by.y = "x_rank",
+                  all.x = TRUE) %>% 
+  select(-x)
+
+
+p <- ggplot(filter(tst_pres,v_part!=Inf),
+            aes(x = velocity_ms,
+                y = v_part,
+                size = -ERsed_gm2day,
+                color = ERsed_gm2day))+
+  scale_x_log10(breaks = 10^seq(-10,10,by=.25),
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_color_viridis_c(option= "plasma",
+                        guide = "none") +
+  annotation_logticks(sides = "tb")+
+  xlab(expression(bold(paste("Velocity", " ", "(",m*s^-1,")"))))+
+  ylab(expression(bold(paste("Partial Res."," ",ER[sed]," ", "(",gO[2]*m^-2*d^-1, ")"))))+
+  scale_size(range = c(2,24),
+             guide = "none")+
+  geom_smooth(method = "lm", color = "black")+
+  geom_point()+
+  theme_httn
+p
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_er_insitu_velocity.png", sep = '/'),
+       width = 10,
+       height = 8,
+       units = "in")
+
+
+# Depth
+set.seed(2703)
+x_pr <- ggpredict(tst_mod3, "mean_depth_m")
+x_plot_dat <- ggplot_build(plot(x_pr,residuals = TRUE))$data[[1]] %>% 
+  select(x,y) %>% 
+  mutate(x_rank = rank(x, ties.method = "max")) %>% 
+  rename(d_part = y)
+
+tst_pres <- merge(tst_pres,
+                  x_plot_dat,
+                  by.x = "d_rank",
+                  by.y = "x_rank",
+                  all.x = TRUE) %>% 
+  select(-x)
+
+
+p <- ggplot(filter(tst_pres,d_part!=Inf),
+            aes(x = mean_depth_m,
+                y = d_part,
+                size = -ERsed_gm2day,
+                color = ERsed_gm2day))+
+  scale_x_log10(breaks = 10^seq(-10,10,by=.5),
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_color_viridis_c(option= "plasma",
+                        guide = "none") +
+  annotation_logticks(sides = "tb")+
+  xlab("Mean depth (m)")+
+  ylab(expression(bold(paste("Partial Res."," ",ER[sed]," ", "(",gO[2]*m^-2*d^-1, ")"))))+
+  scale_size(range = c(2,24),
+             guide = "none")+
+  geom_smooth(method = "lm", color = "black")+
+  geom_point()+
+  theme_httn
+p
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_er_insitu_depth.png", sep = '/'),
+       width = 10,
+       height = 8,
+       units = "in")
+
+
+# Slope
+set.seed(2703)
+x_pr <- ggpredict(tst_mod3, "slope")
+x_plot_dat <- ggplot_build(plot(x_pr,residuals = TRUE))$data[[1]] %>% 
+  select(x,y) %>% 
+  mutate(x_rank = rank(x, ties.method = "max")) %>% 
+  rename(s_part = y)
+
+tst_pres <- merge(tst_pres,
+                  x_plot_dat,
+                  by.x = "s_rank",
+                  by.y = "x_rank",
+                  all.x = TRUE)%>% 
+  select(-x)
+
+
+p <- ggplot(filter(tst_pres,s_part!=Inf),
+            aes(x = slope,
+                y = s_part,
+                size = -ERsed_gm2day,
+                color = ERsed_gm2day))+
+  scale_x_log10(breaks = 10^seq(-10,10,by=1),
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_color_viridis_c(option= "plasma",
+                        guide = "none") +
+  annotation_logticks(sides = "tb")+
+  xlab("Slope (km/km)")+
+  ylab(expression(bold(paste("Partial Res."," ",ER[sed]," ", "(",gO[2]*m^-2*d^-1, ")"))))+
+  scale_size(range = c(2,24),
+             guide = "none")+
+  geom_smooth(method = "lm", color = "black")+
+  geom_point()+
+  theme_httn
+p
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_er_insitu_slope.png", sep = '/'),
+       width = 10,
+       height = 8,
+       units = "in")
+
+
+# Watershed Area
+set.seed(2703)
+x_pr <- ggpredict(tst_mod3, "wshd_area_km2")
+x_plot_dat <- ggplot_build(plot(x_pr,residuals = TRUE))$data[[1]] %>% 
+  select(x,y) %>% 
+  mutate(x_rank = rank(x, ties.method = "max")) %>% 
+  rename(a_part = y)
+
+tst_pres <- merge(tst_pres,
+                  x_plot_dat,
+                  by.x = "a_rank",
+                  by.y = "x_rank",
+                  all.x = TRUE)%>% 
+  select(-x)
+
+
+p <- ggplot(filter(tst_pres,a_part!=Inf),
+            aes(x = wshd_area_km2,
+                y = a_part,
+                size = -ERsed_gm2day,
+                color = ERsed_gm2day))+
+  scale_x_log10(breaks = 10^seq(-10,10,by=1),
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_color_viridis_c(option= "plasma",
+                        guide = "none") +
+  annotation_logticks(sides = "tb")+
+  xlab(expression(bold(paste("Watershed Area", " ", "(",km^2,")"))))+
+  ylab(expression(bold(paste("Partial Res."," ",ER[sed]," ", "(",gO[2]*m^-2*d^-1, ")"))))+
+  scale_size(range = c(2,24),
+             guide = "none")+
+  geom_smooth(method = "lm", color = "black")+
+  geom_point()+
+  theme_httn
+p
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_er_insitu_wsd_area.png", sep = '/'),
+       width = 10,
+       height = 8,
+       units = "in")
+
+
+
+################################################################################
+######################### TOTAL OXYGEN CONSUMPTION #############################
+
+# Matching units
+
+units_dat <- ykm_spc %>% 
+  select(ERsed_gm2day,
+         ERsed_gm3day,
+         stream_area_m2,
+         reach_length_km,
+         mean_depth_m,
+         logtotco2g_m2_day) %>% 
+  mutate(totco2_gm2day = 10^logtotco2g_m2_day,
+         in_totco2_gm2day = (-ERsed_gm2day*48)/32,
+         in_totco2_gm3day = (-ERsed_gm3day*48)/32,
+         stream_m3 = stream_area_m2 * mean_depth_m,
+         totco2_gday = in_totco2_gm3day*stream_m3,
+         totco2_gstm2_day = totco2_gday/stream_area_m2)
+
+p <- ggplot(filter(units_dat, logtotco2g_m2_day > 0.1),
+            aes(totco2_gm2day,
+                in_totco2_gm2day))+
+  geom_smooth(method = "lm")+
+  scale_x_log10()+
+  geom_point()
+p
+
+mod <- lm(totco2_gm2day ~ in_totco2_gm2day,
+          data = filter(units_dat, logtotco2g_m2_day > 0.1))
+
+summary(mod)
+
+
+tot_o2_cons_plot <- ggplot(ykm_spc,
+                  aes(x = wshd_area_km2,
+                      y = (-ERsed_gm2day*stream_area_m2)/(wshd_area_km2*1000000),
+                      color = log(-ERsed_gm2day*stream_area_m2,10),
+                      size = log(-ERsed_gm2day*stream_area_m2,10)))+
+  geom_smooth(data= ykm_spc,
+              aes(x = wshd_area_km2,
+                  y = (-ERsed_gm2day*stream_area_m2)/(wshd_area_km2*1000000)),
+              color = "black",
+              method = "lm",
+              alpha = 0.25,
+              inherit.aes = FALSE) +
+  xlab(expression(bold(paste("Watershed Area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Total"," ",O[2]," ","Consumption"," ",g*km^-2*d^-1))))+
+  scale_x_log10(breaks = breaks,
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_color_viridis_c(limits = c(4,8), breaks = seq(4,7,by=1),
+                        name = expression(bold(paste(gO[2]*km^-2*d^-1))))+
+  guides(color= guide_legend(), size=guide_legend())+
+  geom_point()+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  theme_httn+
+  theme(legend.position = c(0.10,0.2),
+        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 18),
+        axis.title.y = element_text(face = "bold"))+
+  scale_size_continuous(limits = c(4,8), breaks = seq(4,7,by=1), 
+                        name = expression(bold(paste(gO[2]*km^-2*d^-1))),
+                        range= c(2,24))
+  tot_o2_cons_plot
+  
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_scaling_oxygen_consumption_b.png", sep = '/'),
+       width = 12,
+       height = 12,
+       units = "in")
+
+
+
+p <- ggplot(mtcars, aes(x=mpg, y=drat)) +
+  geom_point(aes(size=gear, color=gear)) +
+  scale_color_continuous(limits=c(2, 5), breaks=seq(2, 5, by=0.5)) +
+  guides(color= guide_legend(), size=guide_legend())
+p
+
+
+p + scale_size_continuous(limits=c(2, 5), breaks=seq(2, 5, by=0.5))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# met_inset <- ggplotGrob(met_ins)
+
+met_spc_plot <- ggplot(ykm_spc,
+            aes(x = wshd_area_km2,
+                y = 10^logtotco2g_m2_day,
+                color = log(-ERsed_gm2day*stream_area_m2,10),
+                size = log(-ERsed_gm2day*stream_area_m2,10))) +
+  geom_smooth(data= ykm_spc,
+              aes(x = wshd_area_km2,
+                  y = 10^logtotco2g_m2_day),
+              color = "black",
+              method = "lm",
+              alpha = 0.25,
+              inherit.aes = FALSE) +
+  scale_size(guide = "none", range = c(2,24)) +
+  geom_point() +
+  scale_color_viridis_c(name = expression(paste("Log Total Oxygen Consumption"," ",g*m^-2*d^-1)), 
+                        guide = guide_colorbar(title.position = 'top', title.hjust = 0.5)) +
+  scale_x_log10(breaks = breaks,
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = 10^seq(-10,10,by=2), 
+                labels = trans_format("log10", math_format(10^.x)))+
+  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Total sediment respiration"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  # annotation_custom(
+  #   grob = met_inset,
+  #   xmin = 1.25,
+  #   xmax = 2.7,
+  #   ymin = -2,
+  #   ymax = 0) +
+  theme_httn+
+  theme(legend.position = "none")
+met_spc_plot
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_scaling_oxygen_consumption_a.png", sep = '/'),
+       width = 12,
+       height = 12,
+       units = "in")
+
+
+library(ggplot2)
+
+p <- ggplot(ykm_spc,
+            aes(x = wshd_area_km2,
+                y = 10^logtotco2g_m2_day,
+                color = log(-ERsed_gm2day*stream_area_m2, 10),
+                size = log(-ERsed_gm2day*stream_area_m2, 10))) +
+  geom_smooth(data = ykm_spc,
+              aes(x = wshd_area_km2,
+                  y = 10^logtotco2g_m2_day),
+              color = "black",
+              method = "lm",
+              alpha = 0.25,
+              inherit.aes = FALSE) +
+  geom_point() +
+  scale_color_viridis_c(name = expression(paste("Log Total Oxygen \nConsumption"," ",g*m^2*d^-1)),
+                        guide = FALSE) +
+  scale_size(name = expression(paste("Log Total Oxygen \nConsumption"," ",g*m^2*d^-1)),
+             guide = FALSE) +
+  scale_x_log10() +
+  scale_y_log10() +
+  guides(size = guide_legend(title = "Size and Color\nLegend",
+                             override.aes = list(color = "blue", size = 5)),
+         color = FALSE,
+         title = "Size and Color\nLegend")
+
+p
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################PENDING REVIEW######################################
 
 # Area definitions
 
