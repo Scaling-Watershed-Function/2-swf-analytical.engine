@@ -216,14 +216,14 @@ bgc_dat_c10 <- bgc_dat_c10 %>%
 p <- ggplot(data = filter(bgc_dat_c10,
                           acc_totco2g_km2_day < 1650000),
             aes(x = wshd_area_km2,
-                y = acc_totco2g_ntw_day, 
+                y = acc_totco2g_km2_day, 
                 color = ent_cat))+
   geom_point()+
   scale_x_log10()+
   scale_y_log10()+
   scale_color_manual(values = my_mcolors)+
   geom_abline(slope = 1, intercept = 3)+
-  facet_wrap(~basin, ncol = 2)
+  facet_wrap(basin~ent_cat, ncol = 8)
 p
 
 p <- ggplot(data = filter(bgc_dat_c10,
@@ -262,7 +262,7 @@ ent_quant_i <- ggplot(filter(bgc_dat_c10,
                              basin == "yakima" &
                                acc_totco2g_km2_day < 1650000),
                       aes(x = wshd_area_km2,
-                          y = acc_totco2g_ntw_day,
+                          y = acc_totco2g_km2_day,
                           color = ent_cat))+
   geom_smooth(method="lm",fullrange = TRUE, alpha = 0.3)+
   scale_x_log10(breaks = breaks, 
@@ -292,9 +292,16 @@ ent_quant <- ggplot(data = filter(bgc_dat_c10,
                            basin == "yakima" &
                            acc_totco2g_km2_day < 1650000),
              aes(x = wshd_area_km2,
-                 y = acc_totco2g_ntw_day, 
+                 y = acc_totco2g_km2_day, 
                  color = ent_cat))+
-  geom_point(size = 2.5)+
+  geom_point(size = 2.5, alpha = 0.35)+
+  geom_point(data = filter(bgc_dat_c10,
+                           basin == "yakima" &
+                           ent_cat == "Q80+" &
+                           acc_totco2g_km2_day < 1650000),
+             aes (x =wshd_area_km2,
+                  y = acc_totco2g_km2_day),
+             size = 2.5)+
   geom_abline(slope = 1, intercept = 3, linewidth = 2, linetype = "dashed")+
   scale_x_log10(breaks = breaks, 
                 labels = trans_format("log10", math_format(10^.x)))+
@@ -309,7 +316,7 @@ ent_quant <- ggplot(data = filter(bgc_dat_c10,
     grob = ent_ins,
     xmin = 2,
     xmax = 4.25,
-    ymin = -6,
+    ymin = -5,
     ymax = -1) +
   theme_httn+
   theme(legend.position =c(0.15,0.75),
@@ -318,6 +325,8 @@ ent_quant <- ggplot(data = filter(bgc_dat_c10,
         plot.title = element_text(size = 16),
         strip.text = element_text(size = 18, face = "bold"))
 ent_quant
+
+
 
 
 ggsave(file=paste(assets_figs,"guerrero_etal_23_scaling_respiration_entropy.png",sep = '/'),
@@ -339,7 +348,7 @@ hzt_quant_i <- ggplot(filter(bgc_dat_c10,
                              basin == "yakima" &
                                acc_totco2g_km2_day < 1650000),
                       aes(x = wshd_area_km2,
-                          y = acc_totco2g_ntw_day,
+                          y = acc_totco2g_km2_day,
                           color = rst_cat))+
   geom_smooth(method="lm",fullrange = TRUE, alpha = 0.3)+
   scale_x_log10(breaks = breaks, 
@@ -387,7 +396,7 @@ hzt_quant <- ggplot(data = filter(bgc_dat_c10,
     grob = hzt_ins,
     xmin = 2,
     xmax = 4.25,
-    ymin = -6,
+    ymin = -5,
     ymax = -1) +
   theme_httn+
   theme(legend.position =c(0.15,0.75),
@@ -402,6 +411,45 @@ ggsave(file=paste(assets_figs,"guerrero_etal_23_scaling_respiration_res_time.png
        width = 12,
        height = 12,
        units = "in")
+
+
+# facet wrap residence time
+
+hzt_quant <- ggplot(data = filter(bgc_dat_c10,
+                                  basin == "yakima" &
+                                    acc_totco2g_km2_day < 1650000),
+                    aes(x = wshd_area_km2,
+                        # y = acc_totco2g_ntw_day, 
+                        y =  acc_totco2g_km2_day,
+                        color = rst_cat))+
+  geom_point(size = 2.5)+
+  geom_abline(slope = 1, intercept = 3, linewidth = 2, linetype = "dashed")+
+  scale_x_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks_c, 
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_color_manual(values = my_dcolors)+
+  xlab(expression(bold(paste("Watershed Area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste(" Cumulative"," ",Respiration[Sed],"(",gCO[2]*network^-1*d^-1,")"))))+
+  guides(color=guide_legend(title = "Residence time\nlog(quantiles)"))+
+  annotation_logticks(size = 0.75, sides = "tblr")+
+  facet_wrap(basin~rst_cat, ncol = 4)+
+  theme_httn+
+  theme(legend.position ="none",
+        legend.text = element_text(size=16),
+        legend.title = element_text(size=18),
+        plot.title = element_text(size = 16),
+        strip.text = element_text(size = 18, face = "bold"))
+hzt_quant
+
+
+ggsave(file=paste(assets_figs,"guerrero_etal_23_facet_scaling_respiration_res_time.png",sep = '/'),
+       width = 16,
+       height = 12,
+       units = "in")
+
+
+
 
 
 ################################################################################
@@ -493,12 +541,12 @@ ggsave(file=paste(assets_figs,"guerrero_etal_23_local_scaling_respiration_reside
 
 in_situ_er_wshd_plot <- ggplot(ykm_spc,
                                aes(x = wshd_area_km2,
-                                   y = ERsed_gm2day,
+                                   y = -ERsed_gm2day,
                                    color = ERsed_gm2day,
                                    size = -ERsed_gm2day))+
   geom_smooth(data= ykm_spc,
               aes(x = wshd_area_km2,
-                  y = ERsed_gm2day),
+                  y = -ERsed_gm2day),
               color = "black",
               method = "lm",
               alpha = 0.25,
@@ -510,6 +558,8 @@ in_situ_er_wshd_plot <- ggplot(ykm_spc,
   scale_color_viridis_c(option= "plasma",
                         guide = "none") +
   scale_x_log10(breaks = breaks,
+                labels = trans_format("log10", math_format(10^.x)))+
+  scale_y_log10(breaks = breaks,
                 labels = trans_format("log10", math_format(10^.x)))+
   geom_point()+
   annotation_logticks(size = 0.75, sides = "tb")+
@@ -548,7 +598,8 @@ tst_dat <-ykm_spc %>%
          stream_order,
          mean_ann_vel_ms) %>% 
   filter(ERsed_gm2day<0 &
-           is.na(ERsed_gm2day)==FALSE)
+           is.na(ERsed_gm2day)==FALSE) %>% 
+  mutate(o2_consump_gm2day = -ERsed_gm2day)
 
 
 tst_mod <- lm(ERsed_gm2day ~ log(wshd_area_km2) + Minidot_Temperature + log(Average_Depth_cm) +
@@ -584,33 +635,33 @@ summary(tst_mod2)
 
 vif(tst_mod2)
 
-tst_mod3 <- lm(ERsed_gm2day ~ log(mean_depth_m) + log(velocity_ms) + log(wshd_area_km2) + slope,
+tst_mod3 <- lm(o2_consump_gm2day ~ log(mean_depth_m) + log(velocity_ms) + log(wshd_area_km2) + slope,
                data = tst_dat)
 
 summary(tst_mod3)
 vif(tst_mod3)
 
-crPlots(tst_mod3)
-
 # Partial residual plots
 crPlots(tst_mod3)
+
+# Variable importance
 varImp(tst_mod3)
 
-tst_dat$pred_ERsed_gm2day <- tst_mod3$fitted.values
+tst_dat$pred_o2_consump_gm2day <- tst_mod3$fitted.values
 
 # Regression plot
 reg_plot <- ggplot(tst_dat,
-            aes(x = ERsed_gm2day,
-                y = pred_ERsed_gm2day))+
+            aes(x = o2_consump_gm2day,
+                y = pred_o2_consump_gm2day))+
   geom_abline(slope = 1, linewidth = 2, color = "darkred")+
   geom_point(size = 5)+
-  scale_x_continuous(limits = c(-21,0))+
-  scale_y_continuous(limits = c(-21,0))+
+  scale_x_continuous(limits = c(0,21))+
+  scale_y_continuous(limits = c(0,21))+
   xlab("Observed")+
   ylab("Predicted")+
-  annotate("text", x = -5, y = -15, label = "paste(italic(R) ^ 2, \" = .57\")",
-           parse = TRUE, size = 14)+
-  annotate("text", x = -5, y = -19, label = "p < 0.001",
+  annotate("text", x = 5, y = 20, label = "paste(italic(R) ^ 2, \" = .57\")",
+           parse = TRUE, size = 12)+
+  annotate("text", x = 5, y = 17, label = "p < 0.001",
            parse = TRUE, size = 12)+
   ggtitle(expression(bold(paste("In-situ"," ",ER[sed]," ", "(",gO[2]*m^-2*d^-1, ")"))))+
   theme_httn+
@@ -629,9 +680,9 @@ ggsave(file=paste(assets_figs,"guerrero_etal_23_er_insitu_regression.png", sep =
 # We will match partial residuals based on the ranking of the predictor variables
 # (since the exact values for x in the partial residuals data may be slightly different)
 
-tst_pres <- ykm_spc %>% 
+tst_pres <- tst_dat %>% 
   select(comid,
-         ERsed_gm2day,
+         o2_consump_gm2day,
          velocity_ms,
          mean_depth_m,
          discharge_cms,

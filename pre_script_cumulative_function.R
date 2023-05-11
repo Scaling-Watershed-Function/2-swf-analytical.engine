@@ -21,7 +21,8 @@ gc()
 
 rm()
 
-librarian::shelf(tidyverse)# To manipulate ggplot objects
+librarian::shelf(tidyverse,
+                 nhdplusTools)# To manipulate ggplot objects
 
 #Data:
 
@@ -42,6 +43,87 @@ bgc_dat_c8 <- read_csv(paste(processed_data,"230505_bgc_dat_c7_entropy.csv", sep
   mutate(totco2g_day = 10^logtotco2g_m2_day*stream_area_m2)
 
 
+# Cummulative respiration
+
+# Yakima River Basin
+
+accm_resp_yrb <- bgc_dat_c8 %>%
+  filter(basin == "yakima") %>% 
+  select(comid, tocomid, totco2g_day) %>% 
+  rename(ID = comid,
+         toID = tocomid,
+         length = totco2g_day) 
+
+bgc_co2_accm <- accm_resp_yrb %>%
+  mutate(acc_totco2g_day = calculate_arbolate_sum(accm_resp_yrb)) %>%
+  select(ID, acc_totco2g_day) %>% 
+  rename(comid = ID)
+
+
+bgc_dat_c9 <- bgc_dat_c8 %>% 
+  filter(basin == "yakima") %>% 
+  left_join(.,
+            bgc_co2_accm,
+            by = "comid") %>% 
+  mutate(acc_totco2g_km2_day = acc_totco2g_day/wshd_area_km2)
+
+
+# Cumulative stream surface area
+
+accm_stream_area_yrb <- bgc_dat_c9 %>%
+  filter(basin == "yakima") %>% 
+  select(comid, tocomid, stream_area_m2) %>% 
+  rename(ID = comid,
+         toID = tocomid,
+         length = stream_area_m2) 
+
+acc_str_area_yrb <- accm_stream_area_yrb %>%
+  mutate(acc_stream_area_m2 = calculate_arbolate_sum(accm_stream_area_yrb)) %>%
+  select(ID, acc_stream_area_m2 ) %>% 
+  rename(comid = ID)
+
+bgc_dat_c10 <- bgc_dat_c9 %>% 
+  filter(basin == "yakima") %>% 
+  left_join(.,
+            acc_str_area_yrb,
+            by = "comid") %>% 
+  mutate(acc_totco2g_stream_m2_day = acc_totco2g_day/acc_stream_area_m2)
+
+
+scl_plot <- ggplot(bgc_dat_c10,
+                   aes(x = wshd_area_km2,
+                       y = acc_stream_area_m2))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  geom_abline()
+scl_plot
+
+
+
+bgc_dat_c_test_accm <- left_join(bgc_dat_c_test, bgc_dat_c_test_accm, by = "ID") %>% 
+  rename(comid = ID)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ################# Finding upstream reaches ########################################3
 findSrc <- function(endNode, ret = NULL) {
   w <- which(to_node %in% endNode)
@@ -51,6 +133,176 @@ findSrc <- function(endNode, ret = NULL) {
     return(findSrc(from_node[w], c(ret, endNode)))
   }
 }
+
+################# function validation ##############################################
+
+#We will test the performance of this function by calculating the cumulative stream 
+#length, which should correspond to "tot_stream_length_km" in the original dataset. 
+
+
+######### YAKIMA RIVER BASIN ############################################
+yrb_dat <- filter(bgc_dat_c8, basin == "yakima")
+
+to_node<-yrb_dat$to_node
+from_node<-yrb_dat$from_node
+
+##########################################################################
+#Cumulative stream length
+
+tmp_comid_strm_l<-matrix(0,ncol=2,nrow=nrow(yrb_dat))
+
+for (i in 1:nrow(yrb_dat)){
+  j_id<-findSrc(yrb_dat$from_node[i],yrb_dat$to_node[i])
+  ## select the downstream reach
+  tmp<-j_id[1]
+  
+  tmp_comid<-yrb_dat[yrb_dat$from_node==j_id[1],]
+  tmp_comid<-tmp_comid$comid
+  
+  if(length(j_id)==1){
+    ## no upstream
+    tmp1_strm_l<-yrb_dat[yrb_dat$from_node==j_id[1],]
+  }
+  
+  else {
+    
+    tmp1_strm_l= subset(yrb_dat, from_node %in% c(j_id))
+  }
+  
+  tmp_comid_strm_l[i,]<-cbind(tmp_comid[1],sum(tmp1_strm_l$reach_length_km))
+  
+  print(i)
+  
+}
+
+yrb_acc_strm_l<- as_tibble(unlist(tmp_comid_strm_l)) %>% 
+  rename(comid = V1,
+         acc_stream_length_km = V2) %>% 
+  distinct(comid, .keep_all = TRUE) 
+
+# It results in the same number of NAs, so there is something wrong with the function
+
+# Arbolate Sum in NHDPlus are calculated using COMID, to toCOMID instead of nodes, with
+# the NHDPlus package
+
+# Calculating cumulative stream length
+
+
+bgc_dat_c_test <- bgc_dat_c8 %>%
+  select(comid, tocomid, mean_ann_runf_mm) %>% 
+  rename(ID = comid,
+         toID = tocomid,
+         length = mean_ann_runf_mm) 
+
+bgc_dat_c_test_accm <- bgc_dat_c_test %>%
+  mutate(accm_ann_runf = calculate_arbolate_sum(bgc_dat_c_test)) %>%
+  select(ID, accm_ann_runf)
+
+bgc_dat_c_test_accm <- left_join(bgc_dat_c_test, bgc_dat_c_test_accm, by = "ID") %>% 
+  rename(comid = ID)
+
+bgc_dat_t2 <- bgc_dat_c8 %>% 
+  select(comid, wshd_area_km2, mean_ann_runf_mm) %>% 
+  left_join(.,
+            bgc_dat_c_test_accm,
+            by = "comid") %>% 
+  ggplot(aes(x= wshd_area_km2,
+             y = accm_ann_runf))+
+  scale_x_log10()+
+  scale_y_log10()+
+  geom_point()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+bgc_dat_c_test <- bgc_dat_c8 %>%
+  select(comid, tocomid, reach_length_km) %>% 
+  rename(seg_id = comid,
+         toID = tocomid,
+         length_km = reach_length_km) %>% 
+  mutate(accm_strm_length = calculate_arbolate_sum(., 
+                                                   id_col = "seg_id", 
+                                                   len_col = "length_km"))
+
+
+
+
+
+
+
+
+strm_length_plot <- bgc_dat_c8 %>% 
+  select(comid, tot_stream_length_km) %>% 
+  merge(.,
+        bgc_dat_c_test,
+        by = "comid") %>% 
+  ggplot(aes(x = tot_stream_length_km,
+             y = accm_strm_length))+
+  geom_point()+
+  geom_abline()+
+  scale_x_log10()+
+  scale_y_log10()
+strm_length_plot
+
+# There are a few outliers in our dataset, so we probably need to replace the 
+# values with the new nhdplusTools calculation
+
+# Testing for concentrations
+
+bgc_dat_c_test1 <- bgc_dat_c8 %>%
+  group_by(basin) %>% 
+  select(ID = comid, toID = tocomid, length = logRT_total_hz_s) %>% 
+  mutate(accm_res_time  = calculate_arbolate_sum(bgc_dat_c_test1))%>% 
+  rename(comid = ID)
+
+rst_plot <- bgc_dat_c8 %>% 
+  select(comid, stream_order, wshd_area_km2) %>% 
+  merge(.,
+        bgc_dat_c_test1,
+        by = "comid") %>% 
+  ggplot(aes(x = wshd_area_km2,
+             y = accm_res_time))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()
+rst_plot
+
+# Testing example from ChatGPT
+
+cgpt_stream_length <- bgc_dat_c8 %>% 
+  select(reach_length_km,comid,tocomid)%>% 
+  mutate(ro = order(tocomid),
+         accm_stream_length = ave(reach_length_km, ro, FUN = cumsum))
+
+strm_length_plot <- bgc_dat_c8 %>% 
+  select(comid, tot_stream_length_km) %>% 
+  merge(.,
+        cgpt_stream_length,
+        by = "comid") %>% 
+  ggplot(aes(x = tot_stream_length_km,
+             y = accm_stream_length))+
+  geom_point()+
+  geom_abline()+
+  scale_x_log10()+
+  scale_y_log10()
+strm_length_plot
 
 
 ######### YAKIMA RIVER BASIN ############################################
@@ -94,6 +346,31 @@ yrb_acc_dat <- merge(yrb_dat,
                      yrb_acc_rsp,
                      by = "comid",
                      all.x = TRUE)
+
+# This operation results in a total 2486 NA values. 
+
+# Let's check what are the attributes of this subset: 
+
+na_acc_dat <- filter(yrb_acc_dat, is.na(acc_totco2g_day)==TRUE)
+
+summary(na_acc_dat)
+
+# This dataset covers a wide range of values for most attributes except for stream
+# order, which correspond to mostly first order streams
+
+# Let's check if this number encompasses all first order streams in the original 
+# dataset
+
+tot_1_order_streams <- nrow(filter(yrb_acc_dat,stream_order == 1))
+
+# we have a total of 3223 first order streams. 
+
+# Let's now check how many first order streams we have in the NAs data subset
+
+tot_1_order_streams_na <- nrow(filter(na_acc_dat,stream_order == 1))
+
+# 2480; only 6 streams corresponding to a different order. 
+
 
 
 

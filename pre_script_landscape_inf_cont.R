@@ -286,20 +286,6 @@ bgc_dat_c7 <- bgc_dat_c6 %>%
   ungroup()
 
 
-bgc_dat_c7 <- bgc_dat_c7 %>% 
-  group_by(comid) %>% 
-  mutate(frt=wshd_forest_scp+wshd_water_scp,
-         shr=wshd_grass_scp+wshd_shrub_scp+wshd_barren_scp,
-         hum=wshd_human_scp,
-         h3tot=entropy(c(frt,
-                     shr,
-                     hum),
-                     unit = "log2"),
-         h3max = log(3,2),
-         h3rel = h3tot/h3max) %>% 
-  ungroup()
-
-
 
 write.csv(bgc_dat_c7,paste(processed_data,"230505_bgc_dat_c7_entropy.csv",sep = '/'),
           row.names = FALSE)
