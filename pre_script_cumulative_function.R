@@ -22,7 +22,8 @@ gc()
 rm()
 
 librarian::shelf(tidyverse,
-                 nhdplusTools)# To manipulate ggplot objects
+                 nhdplusTools, 
+                 purrr)
 
 #Data:
 
@@ -40,10 +41,70 @@ heading_dat <- read_csv(paste(processed_data,"guerrero_etal_swf_dd.csv", sep = '
 #values
 bgc_dat_c8 <- read_csv(paste(processed_data,"230505_bgc_dat_c7_entropy.csv", sep = "/"),
                        show_col_types = FALSE) %>% 
-  mutate(totco2g_day = 10^logtotco2g_m2_day*stream_area_m2)
+  mutate(totco2g_day = 10^logtotco2g_m2_day*stream_area_m2,
+         RT_total_hz_s = 10^logRT_total_hz_s,
+         qhz_total_m_s = 10^logq_hz_total_m_s)
 
 
-# Cummulative respiration
+# Cummulative values
+
+library(purrr)
+library(dplyr)
+
+accm_dat <- bgc_dat_c8 %>% 
+  group_by(basin) %>% 
+  select(comid,
+         tocomid,
+         basin,
+         wshd_area_km2,
+         stream_area_m2,
+         RT_total_hz_s,
+         qhz_total_m_s,
+         wshd_forest_scp,
+         wshd_grass_scp,
+         wshd_shrub_scp,
+         wshd_human_scp,
+         totco2g_day) %>% 
+  mutate(across(stream_area_m2:totco2g_day, ~ calculate_arbolate_sum(data.frame(ID = comid,
+                                                                                toID = tocomid,
+                                                                                length = .x))) %>% 
+           set_names(paste0("accm_", names(select(., stream_area_m2:totco2g_day))))) 
+
+
+p <- ggplot(accm_dat,
+            aes(x = wshd_area_km2,
+                y = accm_stream_area_m2, 
+                color = basin))+
+  geom_point(alpha = 0.15)+
+  # geom_smooth(method = 'lm')+
+  scale_x_log10()+
+  scale_y_log10()+
+  geom_abline(intercept = 3.6, 
+              linetype = "dashed", 
+              color = "black",
+              linewidth = 1.0)+
+  facet_wrap(~basin, ncol = 2)
+p
+
+area_mod <- lm(log(accm_stream_area_m2,10) ~ log(wshd_area_km2,10) + basin, 
+               data = accm_dat)
+
+summary(area_mod)
+confint(area_mod)
+
+# The scaling exponent for stream surface area is significantly higher in the
+# Willamette watershed (1.06) than in the Yakima River Basin (0.93). However, 
+# in both cases cumulative stream area scales linearly with watershed area, and 
+# as such watershed function.
+
+area_mod$effects
+
+accm_dat <- bgc_dat_c8 %>% 
+  group_by(basin) %>% 
+  select(comid, tocomid, basin, stream_area_m2, RT_total_hz_s, qhz_total_m_s, wshd_forest_scp, wshd_grass_scp, wshd_shrub_scp, wshd_human_scp, totco2g_day) %>% 
+  mutate_at(vars(stream_area_m2:totco2g_day), ~ calculate_arbolate_sum(data.frame(ID = accm_dat$comid, toID = accm_dat$tocomid, length = .x))) %>% 
+  rename_with(~ paste0("accm_", .), starts_with("stream_area_m2"), everything())
+
 
 # Yakima River Basin
 
@@ -58,6 +119,13 @@ bgc_co2_accm <- accm_resp_yrb %>%
   mutate(acc_totco2g_day = calculate_arbolate_sum(accm_resp_yrb)) %>%
   select(ID, acc_totco2g_day) %>% 
   rename(comid = ID)
+
+
+
+
+
+
+
 
 
 bgc_dat_c9 <- bgc_dat_c8 %>% 

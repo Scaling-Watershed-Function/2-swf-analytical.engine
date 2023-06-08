@@ -9,7 +9,7 @@ librarian::shelf(dplyr, tidytext, tidyverse,
 
 # Local Import Path
 assets_pubs <- "../1-swf-knowledge.base/assets/data/raw" 
-t_df <- as_tibble(read_csv(paste(assets_pubs,"230330_scaling_hbgc_zotero.csv",sep='/'),show_col_types = FALSE))
+t_df <- as_tibble(read_csv(paste(assets_pubs,"230605_zotero_scaling_hbgc.csv",sep='/'),show_col_types = FALSE))
 t_df
 
 # For our analyses below, we won't need DOIs, PMIDs or arXiv IDs. We will focus
