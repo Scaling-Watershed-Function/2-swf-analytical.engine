@@ -67,6 +67,7 @@ accm_dat <- bgc_dat_c8 %>%
          wshd_grass_scp,
          wshd_shrub_scp,
          wshd_human_scp,
+         hrel,
          totco2g_day) %>% 
   mutate(across(stream_area_m2:totco2g_day, ~ calculate_arbolate_sum(data.frame(ID = comid,
                                                                                 toID = tocomid,
@@ -74,25 +75,60 @@ accm_dat <- bgc_dat_c8 %>%
            set_names(paste0("accm_", names(select(., stream_area_m2:totco2g_day))))) 
 
 
+
+# p <- ggplot(filter(accm_dat,wshd_area_km2 > 0.25),
 p <- ggplot(filter(accm_dat,
-                   reach_type == "StreamRiver"),
+                   reach_type == "StreamRiver" &
+                   wshd_area_km2 > 0.25),
+# p <- ggplot(accm_dat,
             aes(x = wshd_area_km2,
-                y = accm_totco2g_day*wshd_stream_dens, 
-                color = basin))+
+                y = accm_totco2g_day/wshd_area_km2, 
+                color = as.factor(stream_order)))+
   geom_point(alpha = 0.5)+
   # geom_smooth(method = 'lm')+
   scale_x_log10()+
   scale_y_log10()+
-  geom_abline(intercept = 3.6, 
+  geom_abline(intercept = 0.6, 
               linetype = "dashed", 
               color = "black",
               linewidth = 1.0)+
-  facet_wrap(~basin, ncol = 2)
+  geom_abline(intercept = 0.9, 
+              slope = 1.7,
+              linetype = "dashed", 
+              color = "black",
+              linewidth = 1.0)+
+  facet_wrap(~basin, ncol = 2, scales = "free_y")
 p
 
 
+p <- ggplot(filter(accm_dat,
+                   reach_type == "StreamRiver" &
+                     wshd_area_km2 > 0.25),
+            # p <- ggplot(accm_dat,
+            aes(x = wshd_area_km2,
+                y = accm_totco2g_day/wshd_area_km2, 
+                color = log(stream_area_m2)))+
+  geom_point(alpha = 0.5)+
+  # geom_smooth(method = 'lm')+
+  scale_x_log10()+
+  scale_y_log10()+
+  geom_abline(intercept = 0.6, 
+              linetype = "dashed", 
+              color = "black",
+              linewidth = 1.0)+
+  geom_abline(intercept = 0.9, 
+              slope = 1.7,
+              linetype = "dashed", 
+              color = "black",
+              linewidth = 1.0)+
+  facet_wrap(~basin, ncol = 2, scales = "free_y")
+p
+
+
+
 p1 <- ggplot(filter(accm_dat,
-                   reach_type == "StreamRiver"),
+                   reach_type == "StreamRiver"|
+                     wshd_area_km2 > 0.5),
             aes(x = wshd_area_km2,
                 y = accm_stream_area_m2, 
                 color = basin))+
@@ -144,7 +180,7 @@ p
 p2 <- ggplot(bgc_dat_c8,
             aes(x = wshd_area_km2,
                 y = wshd_stream_dens, 
-                color = basin))+
+                color = as.factor(stream_order)))+
   geom_point(alpha = 0.5)+
   # geom_smooth(method = 'lm')+
   scale_x_log10()+
