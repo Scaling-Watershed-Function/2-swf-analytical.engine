@@ -9,23 +9,45 @@ gc()
 
 librarian::shelf(utils,
                  tidyverse)
-# Input output file paths:
 
+
+# Input output file paths:
 raw_data <- "../1-swf-knowledge.base/assets/data/raw" 
 processed_data <- "../1-swf-knowledge.base/assets/data/processed"
 
-phys_dat_mod8 <- read_csv(paste(raw_data,"230504_phys_dat_mod8.csv", sep = "/"),
+# Input data
+# Physical characterization watersheds and catchments
+
+phys_dat_ro <- read_csv(paste(raw_data,"230620_ord_basin_hydrogeom_swf.csv", sep = '/'),
+                        show_col_types = FALSE)
+
+# Landscape heterogeneity data
+
+swf_land_ent_dat <- read_csv(paste(processed_data,"230622_landscape_heterogeneity_pnw.csv", sep = '/'),
+                        show_col_types = FALSE)
+
+
+# Kyongho's model results
+son_etal_22 <- read_csv(paste(raw_data,"230406_son_etal_22_results_zen.csv", sep = '/'),
+                        show_col_types = FALSE)
+
+
+
+
+
+
+phys_dat_mod6 <- read_csv(paste(raw_data,"230620_guerrero_etal_network_swf.csv", sep = "/"),
                           show_col_types = FALSE)
 
 # Artificial paths
-art_path <- nrow(filter(phys_dat_mod8, reach_type == "ArtificialPath"))
+art_path <- nrow(filter(phys_dat_mod6, reach_type == "ArtificialPath"))
 # Canals and Ditches
-can_dtch <- nrow(filter(phys_dat_mod8, reach_type == "CanalDitch"))
+can_dtch <- nrow(filter(phys_dat_mod6, reach_type == "CanalDitch"))
 # Connectors
-con_path <- nrow(filter(phys_dat_mod8, reach_type == "Connector"))
+con_path <- nrow(filter(phys_dat_mod6, reach_type == "Connector"))
 
 # Natural Channels
-phys_dat_mod9 <- filter(phys_dat_mod8, reach_type == "StreamRiver")
+phys_dat_mod9 <- filter(phys_dat_mod6, reach_type == "StreamRiver")
 
 
 summary(filter(phys_dat_mod9, basin == "yakima"))

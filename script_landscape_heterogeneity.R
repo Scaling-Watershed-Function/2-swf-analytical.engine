@@ -71,65 +71,84 @@ assets_data <- "../1-swf-knowledge.base/assets/data/raw"
 
 # Local export
 assets_processed <- "../1-swf-knowledge.base/assets/data/processed"
+figures <- "../3-swf-production.hub/figures"
 
+# Data inputs
 
-lnd_dat <- read_csv(paste(assets_data,"230321_pnw_2001_landcover.csv", sep = '/'),
+ctch_lnd_dat <- read_csv(paste(assets_data,"230622_nlcd_cat_swf.csv", sep = '/'),
                     show_col_types = FALSE)
 
-lnd_dat <- lnd_dat %>% 
-  mutate(basin = if_else(huc_4=="1703","Yakima","Willamette"))
+wshd_lnd_dat <- read_csv(paste(assets_data,"230622_nlcd_wsd_swf.csv", sep = '/'),
+                         show_col_types = FALSE)
 
-summary(lnd_dat)
+# Pre-processing data inputs
 
-###############################################################################
-# Deriving data sets for both catchment and watershed scale
-###############################################################################
+# Catchment data
 
-# Catchment data set
+colnames(ctch_lnd_dat) <- gsub("CAT_","",colnames(ctch_lnd_dat))
 
-lnd_pnw_cat0 <- lnd_dat %>% 
-  select(starts_with("cat")) %>% 
-  select(-"cat_sink_area_km2") %>% 
-  mutate(total = rowSums(across(where(is.numeric))))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_11","water",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_12","snow",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_21","developed_op",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_22","developed_lw",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_23","developed_md",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_24","developed_hg",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_31","barren",colnames(ctch_lnd_dat))
 
-summary(lnd_pnw_cat0)
+colnames(ctch_lnd_dat) <- gsub("NLCD01_41","forest_dcd",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_42","forest_evg",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_43","forest_mxd",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_52","shrub",colnames(ctch_lnd_dat))
 
-# We expect all the rows to sum up to 100%. We found a few observations that go 
-# a bit above or below that value. To make sure everything adds to 1 (fraction) 
-# we recalculate land use fractions by dividing by the total row sums
+colnames(ctch_lnd_dat) <- gsub("NLCD01_71","grass",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_81","pasture",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_82","crops",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_90","wetland_wood",colnames(ctch_lnd_dat))
+colnames(ctch_lnd_dat) <- gsub("NLCD01_95","wetland_herb",colnames(ctch_lnd_dat))
 
-lnd_pnw_cat <- lnd_pnw_cat0[-17]/rowSums(lnd_pnw_cat0[-17])
+ctch_lnd_dat$level <- "catchment"
 
-# and quickly verify by using:
+# Watershed data
 
-summary(rowSums(lnd_pnw_cat))
+colnames(wshd_lnd_dat) <- gsub("TOT_","",colnames(wshd_lnd_dat))
 
+colnames(wshd_lnd_dat) <- gsub("NLCD01_11","water",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_12","snow",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_21","developed_op",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_22","developed_lw",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_23","developed_md",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_24","developed_hg",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_31","barren",colnames(wshd_lnd_dat))
 
-# Watershed dataset
+colnames(wshd_lnd_dat) <- gsub("NLCD01_41","forest_dcd",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_42","forest_evg",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_43","forest_mxd",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_52","shrub",colnames(wshd_lnd_dat))
 
-# We will proceed similarly with the watershed dataset:
+colnames(wshd_lnd_dat) <- gsub("NLCD01_71","grass",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_81","pasture",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_82","crops",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_90","wetland_wood",colnames(wshd_lnd_dat))
+colnames(wshd_lnd_dat) <- gsub("NLCD01_95","wetland_herb",colnames(wshd_lnd_dat))
 
-lnd_pnw_wsd0 <- lnd_dat %>% 
-  select(starts_with("wsd")) %>% 
-  mutate(total = rowSums(across(where(is.numeric))))
+wshd_lnd_dat$level <- "watershed"
 
-summary(lnd_pnw_wsd0)
+# Dataset for analysis
 
-# We have several observations that are above or below 100 (or 1), so we recalculate
-# fractions:
+swf_land_dat <- rbind(ctch_lnd_dat,
+                      wshd_lnd_dat) %>% 
+  select(-NODATA) %>% 
+  filter(huc_4_subregion_id!="0107") %>% 
+  mutate(basin = if_else(huc_4_subregion_id=="1703","Yakima","Willamette")) %>%
+  mutate(tot_cover = rowSums(across(where(is.numeric)))-comid)
 
-lnd_pnw_wsd <- lnd_pnw_wsd0[-17]/rowSums(lnd_pnw_wsd0[-17])
-
-# and quickly verify by using:
-
-summary(rowSums(lnd_pnw_wsd))
-
+summary(swf_land_dat)
 
 ################################################################################
 # Information content analysis
 ################################################################################
 
-# The NLCD 2001 includes 16 land use wsdegories for both the wsdchment scale and 
+# The NLCD 2001 includes 16 land use categories for both the catchment scale and 
 # the watershed scale. It is common practice for statistical analysis to reduce
 # the number of land use types to a more manageable quantity (5-6). The aggregation
 # criteria may vary among researchers and it is not necessarily guided by data. 
@@ -153,12 +172,16 @@ summary(rowSums(lnd_pnw_wsd))
 
 # It takes the values ("catchment" or "watershed")
 
-analysis_level <- "catchment"
+analysis_level <- "watershed"
 
 if (analysis_level== "catchment") {
-  lnd_inf <- lnd_pnw_cat
+  lnd_inf <- swf_land_dat %>% 
+    filter(level == "catchment")%>% 
+    select(c(3:18))
 } else {
-  lnd_inf <- lnd_pnw_wsd
+  lnd_inf <- swf_land_dat %>% 
+    filter(level == "watershed")%>% 
+    select(c(3:18))
 }
 
 ################################################################################
@@ -255,11 +278,72 @@ p <- ggplot(inf_dat_long,aes(x=reorder(land_use,inf_avg), y = inf_avg, fill = la
                 position=position_dodge(.9)) +
   ylab("Information contribution (bootstrapped average)")+
   xlab("Land use (NLDC-2001 (2019))")+
-  scale_fill_manual(values = nlcd_colors)+
+  scale_fill_manual(values = nlcd_colors, name = "Land Use")+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   ggtitle(paste("Information contribution per land use category (bootstrapped):",analysis_level,"scale",sep = " "))+
   theme_minimal()+
   coord_flip()
 p
 
+plot_name <- paste0("inf_contrib_",analysis_level,".jpg")
 
+ggsave(paste(figures,plot_name,sep = '/'),
+       width = 12,
+       height = 10,
+       units = "in")
+
+
+################################################################################
+# Reduced dimensionality -scapes
+################################################################################
+
+# We can combine the results from the information contribution analysis to reduce
+# the dimensionality of the land use data without loosing important information. 
+
+# In the case of qualitative variables, our first category should
+# start with the land cover with the highest information contribution, in this case,
+# forest_evg. Since other forest types contribute with less information, we can group 
+# them within the same category, that we will refer to as "Forestcapes". The next 
+# land use with the second largest information contribution is grass, although followed
+# immediately by pastures and crops, these last two are managed by humans and should not
+# be grouped together. These landscapes units will correspond to "grasslandscapes". 
+# Although grasses and shrublands can co-occur, they represent two different types of 
+# communities between the Willamette valley and the Yakima River Basin. The shrubland category, 
+# will be indexed as "shrublandscapes". 
+
+# Following this approach we will have the following new categories for land use at both
+# the catchment and the watershed scales.
+
+# Forestcapes: forest_scp =forest_evg + forest_dcd + forest_mxd
+# Grasslandscapes: grass_scp = grass
+# Shrublandscapes: shrub_scp = shrub
+# Waterscapes: water_scp = snow + water + wetland_wood + wetland_herb
+# Humanscapes: human_scp = pasture + crops + developed_op + developed_lw + developed_md + developed_hg
+# Barrenscapes: barren_scp = barren
+
+# We modify our initial data set accordingly
+
+swf_land_dat <- swf_land_dat %>% 
+  mutate(forest_scp =forest_evg + forest_dcd + forest_mxd,
+         grass_scp = grass,
+         shrub_scp = shrub,
+         water_scp = snow + water + wetland_wood + wetland_herb,
+         human_scp = pasture + crops + developed_op + developed_lw + developed_md +developed_hg,
+         barren_scp = barren)
+
+
+swf_land_ent_dat <- swf_land_dat %>% 
+  rowwise() %>% 
+  mutate(ht = entropy(c(forest_scp,
+                        grass_scp,
+                        shrub_scp,
+                        water_scp,
+                        human_scp,
+                        barren_scp),
+                      unit = "log2"),
+         hmax = log(6,2),
+         hrel = ht/hmax) %>%
+  ungroup()
+
+write.csv(swf_land_ent_dat,paste(assets_processed,"230622_landscape_heterogeneity_pnw.csv",sep = '/'),
+          row.names = FALSE)

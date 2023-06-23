@@ -45,6 +45,16 @@ bgc_dat_c8 <- read_csv(paste(processed_data,"230505_bgc_dat_c7_entropy.csv", sep
          RT_total_hz_s = 10^logRT_total_hz_s,
          qhz_total_m_s = 10^logq_hz_total_m_s)
 
+p <- ggplot(data = bgc_dat_c8,
+            aes(x = sinuosity,
+                y = RT_total_hz_s,
+                color = basin))+
+  geom_smooth()+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  facet_wrap(~basin, ncol = 2)
+p
 
 # Cummulative values
 
@@ -59,6 +69,7 @@ accm_dat <- bgc_dat_c8 %>%
          reach_type,
          stream_order,
          wshd_stream_dens,
+         tot_stream_length_km,
          wshd_area_km2,
          stream_area_m2,
          RT_total_hz_s,
@@ -77,10 +88,10 @@ accm_dat <- bgc_dat_c8 %>%
 
 
 # p <- ggplot(filter(accm_dat,wshd_area_km2 > 0.25),
-p <- ggplot(filter(accm_dat,
-                   reach_type == "StreamRiver" &
-                   wshd_area_km2 > 0.25),
-# p <- ggplot(accm_dat,
+# p <- ggplot(filter(accm_dat,
+#                    reach_type == "StreamRiver" &
+#                    wshd_area_km2 > 0.25),
+p <- ggplot(accm_dat,
             aes(x = wshd_area_km2,
                 y = accm_totco2g_day/wshd_area_km2, 
                 color = as.factor(stream_order)))+
@@ -162,7 +173,7 @@ p1
 p <- ggplot(filter(accm_dat,
                    reach_type != "StreamRiver"),
             aes(x = wshd_area_km2,
-                y = accm_totco2g_day/wshd_area_km2, 
+                y = (accm_totco2g_day/wshd_area_km2)*(1/wshd_stream_dens), 
                 color = basin))+
   geom_point(alpha = 0.5)+
   # geom_smooth(method = 'lm')+
@@ -180,15 +191,10 @@ p
 p2 <- ggplot(bgc_dat_c8,
             aes(x = wshd_area_km2,
                 y = wshd_stream_dens, 
-                color = as.factor(stream_order)))+
-  geom_point(alpha = 0.5)+
-  # geom_smooth(method = 'lm')+
+                color =hrel))+
+  geom_point(alpha = 0.85)+
   scale_x_log10()+
   scale_y_log10()+
-  geom_abline(intercept = 3.6, 
-              linetype = "dashed", 
-              color = "black",
-              linewidth = 1.0)+
   facet_wrap(~basin, ncol = 2)
 p2
 
