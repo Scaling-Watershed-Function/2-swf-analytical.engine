@@ -22,6 +22,32 @@ librarian::shelf(tidyverse,
 phys_hyporheic_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_physical_hyporheic_characteristics/data/qaqc_river_corridors_physical_hyporheic_char.csv",
                                show_col_types = FALSE)
 
+
+# 
+
+p <- ggplot(data = phys_hyporheic_dat %>% 
+              filter(t_co2g_day > 0),
+            aes(x = wshd_area_km2,
+                y = t_co2g_day/stream_area_m2,
+            color = as.factor(stream_order)))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  facet_wrap(~basin, ncol =2)
+p
+
+
+p <- ggplot(data = phys_hyporheic_dat %>% 
+              filter(t_co2g_day > 0),
+            aes(x = as.factor(stream_order),
+                y = t_co2g_day/stream_area_m2,
+                color = as.factor(stream_order)))+
+  geom_boxplot()+
+  scale_y_log10()+
+  facet_wrap(~basin, ncol =2)
+p
+
+
 # Checking relationship between watershed area and cumulative stream area
 
 p <- ggplot(data = nsi_rcm_phys_qaqc_dat,
