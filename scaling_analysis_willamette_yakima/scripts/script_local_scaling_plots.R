@@ -115,10 +115,8 @@ ctch_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Sc
                                    show_col_types = FALSE)  
 wshd_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_landscape_heterogeneity/data/watershed_landscape_heterogeneity_pnw.csv",
                                    show_col_types = FALSE)
-rcm_filled_resp_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/raw_data/rcm_2022_model_data/data/RF_filled_rcm_2022_model_data.csv",
-                                show_col_types = FALSE)
 
-nsi_ssn_ntwk_dat <- st_transform(st_read(paste(source_data,"nsi_ssn_network","data","nsi_network_ywrb.shp",sep = "/")),4326)
+nsi_ssn_ntwk_dat <- st_transform(st_read(paste(source_data,"river_corridors_physical_hyporheic_geom.shp",sep = "/")),4326)
 
 
 #header info (data dictionary)
@@ -173,11 +171,7 @@ scaling_analysis_dat0 <- phys_hyporheic_dat %>%
                  c_hmax = hmax,
                  c_hrel = hrel),
         by = "comid",
-        all.x = TRUE) %>% 
-  merge(.,
-        rcm_filled_resp_dat,
-        by = "comid",
-        all.x = TRUE)
+        all.x = TRUE) 
   
 summary(scaling_analysis_dat0)
 
