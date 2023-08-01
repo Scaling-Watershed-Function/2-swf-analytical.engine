@@ -19,20 +19,25 @@ librarian::shelf(tidyverse,
                  betareg,
                  Hmisc)
 
+source_data <- "../1-swf-knowledge.base/datasets/raw_data/rcm_2022_model_data/data/shapefiles"
+
 phys_hyporheic_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_physical_hyporheic_characteristics/data/qaqc_river_corridors_physical_hyporheic_char.csv",
                                show_col_types = FALSE)
+nsi_rcm_ntwk_dat <- st_transform(st_read(paste(source_data,"river_corridors_respiration_geom.shp",sep = "/")),4326)
 
-
-# 
+leaflet(nsi_rcm_ntwk_dat) %>% 
+  addPolylines(weight = 2) %>% 
+  addProviderTiles('Esri')
 
 p <- ggplot(data = phys_hyporheic_dat %>% 
-              filter(t_co2g_day > 0),
+              filter(t_co2g_day>0),
             aes(x = wshd_area_km2,
-                y = t_co2g_day/stream_area_m2,
+                y = accm_t_co2g_day/wshd_area_km2,
             color = as.factor(stream_order)))+
   geom_point()+
   scale_x_log10()+
   scale_y_log10()+
+  geom_abline()+
   facet_wrap(~basin, ncol =2)
 p
 
