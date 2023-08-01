@@ -21,12 +21,40 @@ librarian::shelf(tidyverse,
 
 source_data <- "../../1-swf-knowledge.base/datasets/raw_data/rcm_2022_model_data/data/shapefiles"
 
-scaling_resp_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_physical_hyporheic_characteristics/data/qaqc_river_corridors_physical_hyporheic_char.csv",
+local_data <- "./data"
+
+scaling_resp_raw_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_physical_hyporheic_characteristics/data/qaqc_river_corridors_physical_hyporheic_char.csv",
                              show_col_types = FALSE)
 
 nsi_rcm_ntwk_dat <- st_transform(st_read(paste(source_data,"river_corridors_respiration_geom.shp",sep = "/")),4326)
 
+# Exploring trends in slope and roughness with stream order: 
 
+slope_plot_1 <- ggplot(data = scaling_resp_raw_dat,
+                     aes(x = as.factor(stream_order),
+                         y = reach_slope,
+                         color = as.factor(stream_order)))+
+  geom_boxplot(alpha = 0.5)+
+  scale_y_log10()+
+  labs(x = "Stream order (Strahler)", y = "Reach slope (m/m)")+
+  facet_wrap(~basin, ncol = 2)+
+  theme_minimal()+
+  theme(legend.position = "none")
+slope_plot_1
+
+
+slope_plot_2 <- ggplot(data = scaling_resp_raw_dat,
+                       aes(x = wshd_area_km2,
+                           y = reach_slope,
+                           color = as.factor(stream_order)))+
+  geom_point(alpha = 0.5)+
+  scale_x_log10()+
+  scale_y_log10()+
+  labs(x = "Watershed area (km2)", y = "Reach slope (m/m)")+
+  facet_wrap(~basin, ncol = 2)+
+  theme_minimal()+
+  theme(legend.position = "none")
+slope_plot_2
 
 # Filling gaps for slope and roughness with: interpolate_missing_values()
 
@@ -100,8 +128,10 @@ interpolate_missing_values <- function(data, column, regression = TRUE) {
   return(data)
 }
 
-# Use the function
-roughness_int <- interpolate_missing_values(data = nsi_rcm_phys_dat_m4 %>% 
+# Interpolating values:
+
+# Roughness (29 NAs)
+roughness_int <- interpolate_missing_values(data = scaling_resp_raw_dat %>% 
                                               select(comid,
                                                      tocomid,
                                                      basin,
@@ -111,8 +141,20 @@ roughness_int <- interpolate_missing_values(data = nsi_rcm_phys_dat_m4 %>%
                                                      roughness),
                                             column = "roughness",
                                             regression = TRUE)
+# Total Respiration (10 NAs)
+totco2_int <- interpolate_missing_values(data = scaling_resp_raw_dat %>% 
+                                           select(comid,
+                                                  tocomid,
+                                                  basin,
+                                                  stream_order,
+                                                  mean_ann_pcpt_mm,
+                                                  wshd_area_km2,
+                                                  t_co2g_day),
+                                         "t_co2g_day",
+                                         regression = TRUE)
 
-reach_slope_int <- interpolate_missing_values(data = nsi_rcm_phys_dat_m4 %>% 
+# Reach slope (NAs = 1301)
+reach_slope_int <- interpolate_missing_values(data = scaling_resp_raw_dat %>% 
                                                 mutate(reach_slope = ifelse(reach_slope == 0.00000001,
                                                                             NA,
                                                                             reach_slope)) %>% 
@@ -126,50 +168,40 @@ reach_slope_int <- interpolate_missing_values(data = nsi_rcm_phys_dat_m4 %>%
                                               "reach_slope",
                                               regression = TRUE)
 
-totco2_int <- interpolate_missing_values(data = nsi_rcm_phys_dat_m4 %>% 
-                                           select(comid,
-                                                  tocomid,
-                                                  basin,
-                                                  stream_order,
-                                                  mean_ann_pcpt_mm,
-                                                  wshd_area_km2,
-                                                  t_co2g_day),
-                                         "t_co2g_day",
-                                         regression = TRUE)
+
 
 summary(roughness_int)
 summary(reach_slope_int)
 summary(totco2_int)
 
 
-p <- ggplot(data = reach_slope_int,
-            aes(x = wshd_area_km2,
-                y = reach_slope,
-                color = as.factor(stream_order)))+
-  geom_point()+
+slope_plot_3 <- ggplot(data = reach_slope_int,
+                       aes(x = as.factor(stream_order),
+                           y = reach_slope,
+                           color = as.factor(stream_order)))+
+  geom_boxplot(alpha = 0.5)+
+  scale_y_log10()+
+  labs(x = "Stream order (Strahler)", y = "Reach slope (m/m)")+
+  facet_wrap(~basin, ncol = 2)+
+  theme_minimal()+
+  theme(legend.position = "none")
+slope_plot_3
+
+
+slope_plot_4 <- ggplot(data = reach_slope_int,
+                       aes(x = wshd_area_km2,
+                           y = reach_slope,
+                           color = as.factor(stream_order)))+
+  geom_point(alpha = 0.5)+
   scale_x_log10()+
   scale_y_log10()+
-  facet_wrap(~basin, ncol = 2)
-p
+  labs(x = "Watershed area (km2)", y = "Reach slope (m/m)")+
+  facet_wrap(~basin, ncol = 2)+
+  theme_minimal()+
+  theme(legend.position = "none")
+slope_plot_4
 
-p <- ggplot(data = totco2_int %>% 
-              filter(t_co2g_day>0),
-            aes(x = wshd_area_km2,
-                y = t_co2g_day,
-                color = as.factor(stream_order)))+
-  geom_point()+
-  scale_x_log10()+
-  scale_y_log10()+
-  geom_smooth(data = totco2_int %>% 
-                filter(t_co2g_day > 0),
-              aes(x = wshd_area_km2,
-                  y = t_co2g_day),
-              inherit.aes = FALSE)+
-  facet_wrap(~basin, ncol = 2)
-p
-
-
-nsi_rcm_phys_dat_m5 <- nsi_rcm_phys_dat_m4 %>%
+scaling_resp_prcssd_dat_1 <- scaling_resp_raw_dat %>%
   select(-c(reach_slope,roughness,t_co2g_day)) %>% 
   merge(.,
         roughness_int %>% 
@@ -190,24 +222,20 @@ nsi_rcm_phys_dat_m5 <- nsi_rcm_phys_dat_m4 %>%
         by = "comid",
         all.x = TRUE) 
 
-summary(nsi_rcm_phys_dat_m5)
+summary(scaling_resp_prcssd_dat_1)
 
 
 # We observe a number of datapoints with reach_slope = 0.00000001. These correspond
 # to default values assigned at NHDPlus when no other values were available.  Let's
 # take a look
 
-summary(filter(nsi_rcm_phys_dat_m5, reach_slope < 0.0000001))
+summary(filter(scaling_resp_prcssd_dat_1, reach_slope < 0.0000001))
 
 # We find 229 of these values in this dataset (~ 1%) which seems better than the updated
 # version of NHDPlus 2.1. (~6%)
 
 # Recalculating wshd stream density, and cumulative variables
-nsi_rcm_phys_dat_m6 <-  nsi_rcm_phys_dat_m5 %>% 
-  select(-c(accm_basin_area_km2,
-            accm_basin_slope,
-            accm_stream_slope,
-            accm_stream_dens)) %>% 
+scaling_resp_prcssd_dat_2 <-  scaling_resp_prcssd_dat_1 %>% 
   mutate(stream_area_m2 = (reach_length_km*bnkfll_width_m)*1000) %>% 
   group_by(basin) %>% 
   mutate(across(c(wshd_stream_dens,
@@ -224,9 +252,9 @@ nsi_rcm_phys_dat_m6 <-  nsi_rcm_phys_dat_m5 %>%
            set_names(paste0("accm_", names(select(., wshd_stream_dens:stream_area_m2))))) %>% 
   ungroup()
 
-summary(nsi_rcm_phys_dat_m6)
+summary(scaling_resp_prcssd_dat_2)
 
-test_dat_connectivity <- nsi_rcm_phys_dat_m6 %>% 
+test_dat_connectivity <- scaling_resp_prcssd_dat_2 %>% 
   group_by(basin) %>% 
   mutate(inc_comid = 1,
          tot_comid = sum(inc_comid),
@@ -239,3 +267,7 @@ test_dat_connectivity <- nsi_rcm_phys_dat_m6 %>%
 test_dat_connectivity
 
 # Connectivity is maintained
+
+# Saving Interpolated dataset
+write.csv(scaling_resp_prcssd_dat_2,paste(local_data,"interpolated_scaling_resp_dat.csv", sep = '/'),
+          row.names = FALSE)
