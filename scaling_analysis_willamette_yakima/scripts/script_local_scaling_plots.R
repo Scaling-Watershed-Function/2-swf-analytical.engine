@@ -950,29 +950,6 @@ ggsave(file=paste(assets_figs,"guerrero_etal_23_scaling_oxygen_consumption_b.png
 
 
 
-p <- ggplot(mtcars, aes(x=mpg, y=drat)) +
-  geom_point(aes(size=gear, color=gear)) +
-  scale_color_continuous(limits=c(2, 5), breaks=seq(2, 5, by=0.5)) +
-  guides(color= guide_legend(), size=guide_legend())
-p
-
-
-p + scale_size_continuous(limits=c(2, 5), breaks=seq(2, 5, by=0.5))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1221,7 +1198,6 @@ tot_flow_line_area_p <- hbgc_pnw %>%
   theme(legend.position = "none")
 tot_flow_line_area_p 
 
-# The total flowline lenght does 
 
 # Now, let's take a quick look at the scaling relationships that could be observed
 # through these data sets:
@@ -1421,76 +1397,6 @@ ent_quant <- ggplot(bgc_cln,aes(wsd_are,
         strip.text = element_text(size = 18, face = "bold"))+
   guides(alpha = "none")
 ent_quant
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1704,7 +1610,7 @@ ent_quant
 
 ent_quant <- ent_quant +   ggtitle(paste("Interpretation:",
                          "\nMore homogeneous landscapes (i.e. low entropy) seem to exhibit a bimodal",
-                         "\ndistribution for potential scaling exponents. ore heterogeneous landscapes",
+                         "\ndistribution for potential scaling exponents. More heterogeneous landscapes",
                          "\nappear to come close to linear scaling.",
                          sep = " "))
 ent_quant

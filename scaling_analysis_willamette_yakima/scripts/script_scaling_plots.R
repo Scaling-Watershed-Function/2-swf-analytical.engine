@@ -223,7 +223,7 @@ write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data
           row.names = FALSE)
 
 ################################################################################
-# Data subsetting for plots
+# Data sub-setting for plots
 ################################################################################
 
 # For easier visualization we plot data from a reduced dataset that excludes 
