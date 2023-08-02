@@ -109,14 +109,14 @@ my_mcolors <- c("#ffd6e8",
 
 source_data <- "../../1-swf-knowledge.base/datasets/processed_data/river_corridor_physical_hyporheic_characteristics/data"
 
-phys_hyporheic_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_physical_hyporheic_characteristics/data/qaqc_river_corridors_physical_hyporheic_char.csv",
+scaling_hydraul_geom_dat <- read_csv("https://raw.githubusercontent.com/Scaling-Watershed-Function/2-swf-analytical.engine/main/scaling_analysis_willamette_yakima/data/hydraulic_geom_scaling_resp_dat.csv",
                                show_col_types = FALSE)
 ctch_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_landscape_heterogeneity/data/catchment_landscape_heterogeneity_pnw.csv",
                                    show_col_types = FALSE)  
 wshd_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_landscape_heterogeneity/data/watershed_landscape_heterogeneity_pnw.csv",
                                    show_col_types = FALSE)
 
-nsi_ssn_ntwk_dat <- st_transform(st_read(paste(source_data,"river_corridors_physical_hyporheic_geom.shp",sep = "/")),4326)
+nsi_rcm_ntwk_dat <- st_transform(st_read(paste(source_data,"river_corridors_physical_hyporheic_geom.shp",sep = "/")),4326)
 
 
 #header info (data dictionary)
@@ -125,7 +125,7 @@ nsi_ssn_ntwk_dat <- st_transform(st_read(paste(source_data,"river_corridors_phys
 
 # Merging data
 
-scaling_analysis_dat0 <- phys_hyporheic_dat %>% 
+scaling_analysis_dat <- scaling_hydraul_geom_dat %>% 
   merge(.,
         wshd_heterogeneity_dat %>% 
           select(comid,
@@ -173,13 +173,11 @@ scaling_analysis_dat0 <- phys_hyporheic_dat %>%
         by = "comid",
         all.x = TRUE) 
   
-summary(scaling_analysis_dat0)
+summary(scaling_analysis_dat)
 
-# We find 262 missing values for totco2g_day, let's run a connectivity test without
-# them:
+# Checking connectivity in the dataset
 
-test_dat_connectivity <- scaling_analysis_dat0 %>% 
-  filter(is.na(totco2g_day)==FALSE) %>% 
+test_dat_connectivity <- scaling_analysis_dat %>% 
   group_by(basin) %>% 
   mutate(inc_comid = 1,
          tot_comid = sum(inc_comid),
@@ -191,133 +189,9 @@ test_dat_connectivity <- scaling_analysis_dat0 %>%
   ungroup()
 test_dat_connectivity
 
-# Connectivity decreases for Yakima to 85.2 but increases for Willamete up to 97.4%
+# Looking at the network
 
-missing_yakima <- filter(scaling_analysis_dat0, basin=="yakima" & is.na(totco2g_day)==TRUE)
-missing_willamette <- filter(scaling_analysis_dat0, basin=="willamette" & is.na(totco2g_day)==TRUE)
-
-summary(missing_yakima)
-
-# There are two locations with stream order 7 that are affecting the connectivity, 
-# let's try to replace these missing values with the average of the upstream neighbors
-
-# We will use a pair of functions to interpolate missing values (n<50) 
-get_immediate_neighbors_median <- function(data, column, comid, tocomid) {
-  immediate_neighbors <- c(comid, tocomid)
-  values <- data[[column]][data$comid %in% immediate_neighbors & data[[column]] >= 0]
-  median_value <- median(values, na.rm = TRUE)
-  return(median_value)
-}
-
-interpolate_missing_values <- function(data, column) {
-  column = sym(column)
-  
-  data <- data %>%
-    mutate(!!column := ifelse(!!column < 0 | is.na(!!column), NA, !!column))
-  
-  # Replace NA values in 'mean_ann_pcpt_mm' and 'wshd_area_km2' with median
-  data$mean_ann_pcpt_mm[is.na(data$mean_ann_pcpt_mm)] <- median(data$mean_ann_pcpt_mm, na.rm = TRUE)
-  data$wshd_area_km2[is.na(data$wshd_area_km2)] <- median(data$wshd_area_km2, na.rm = TRUE)
-  
-  # Create the bins for 'mean_ann_pcpt_mm' and 'wshd_area_km2' if there is more than one unique value
-  if(length(unique(data$mean_ann_pcpt_mm)) > 1){
-    data$precipitation_bin <- cut2(data$mean_ann_pcpt_mm, g = 10)
-  } else {
-    data$precipitation_bin <- 1
-  }
-  
-  if(length(unique(data$wshd_area_km2)) > 1){
-    data$watershed_area_bin <- cut2(data$wshd_area_km2, g = 10)
-  } else {
-    data$watershed_area_bin <- 1
-  }
-  
-  for (i in seq_len(nrow(data))) {
-    # Check if the column value is missing (represented by NA)
-    if (is.na(data[[column]][i])) {
-      # Get the immediate neighbors' median value
-      immediate_median <- get_immediate_neighbors_median(data, column, data$comid[i], data$tocomid.x[i])
-      
-      # If there are no immediate neighbors, replace with the median value for the same 'stream_order'
-      # and similar 'mean_ann_pcpt_mm' and 'wshd_area_km2'
-      if (is.na(immediate_median)) {
-        same_bin <- data$stream_order == data$stream_order[i] & 
-          data$precipitation_bin == data$precipitation_bin[i] & 
-          data$watershed_area_bin == data$watershed_area_bin[i]
-        
-        same_bin_values <- data[[column]][same_bin & !is.na(data[[column]])]
-        
-        # Sample a subsample from the set if its size is larger than a specified limit (100 for instance)
-        sample_size <- min(length(same_bin_values), 100)
-        subsample_values <- sample(same_bin_values, size = sample_size)
-        immediate_median <- median(subsample_values, na.rm = TRUE)
-      }
-      
-      # Assign the calculated value to the missing value
-      data[[column]][i] <- immediate_median
-    }
-  }
-  return(data)
-}
-
-yakima_co2_int <- interpolate_missing_values(data = scaling_analysis_dat0 %>%
-                                              filter(basin == "yakima") %>% 
-                                              select(comid,
-                                                     tocomid,
-                                                     stream_order,
-                                                     mean_ann_pcpt_mm,
-                                                     wshd_area_km2,
-                                                     totco2g_day),
-                                            "totco2g_day")
-yakima_merge_dat <- scaling_analysis_dat0 %>% 
-  filter(basin == "yakima") %>% 
-  select(-totco2g_day) %>% 
-  merge(yakima_co2_int %>% 
-          select(comid,
-                 totco2g_day),
-        by = "comid",
-        all.x = TRUE)
-
-int_scaling_analysis_dat <- scaling_analysis_dat0 %>% 
-  filter(basin == "willamette") %>% 
-  rbind(yakima_merge_dat)
-
-# Let's run a new connectivity test:
-
-test_dat_connectivity <- int_scaling_analysis_dat %>% 
-  filter(is.na(totco2g_day)==FALSE) %>% 
-  group_by(basin) %>% 
-  mutate(inc_comid = 1,
-         tot_comid = sum(inc_comid),
-         accm_inc_comid = calculate_arbolate_sum(data.frame(ID = comid,
-                                                            toID = tocomid,
-                                                            length = inc_comid)),
-         connectivity_index = (max(accm_inc_comid)/tot_comid*100)) %>% 
-  summarise(across(c("tot_comid", "accm_inc_comid", "connectivity_index"), max)) %>% 
-  ungroup()
-test_dat_connectivity
-
-# Before we set this as our data for further analysis, let's check why is connectivity
-# improved in Willamette with the removal of the missing resp data
-
-summary(filter(scaling_analysis_dat0,
-               basin =="willamette" &
-                 is.na(totco2g_day)==TRUE))
-
-# It covers several stream orders, including order 7, we need to look into the map
-
-scaling_ntwk_dat <- st_transform(st_read(paste(source_data,"river_corridors_physical_hyporheic_geom.shp",sep = "/")),4326)
-
-scaling_ntwk_dat <- scaling_ntwk_dat %>% 
-  merge(.,
-        int_scaling_analysis_dat %>% 
-          select(comid,
-                 totco2g_day,
-                 tot_qhz_ms),
-        by = "comid",
-        all.x = TRUE)
-
-leaflet(scaling_ntwk_dat) %>% 
+leaflet(nsi_rcm_ntwk_dat) %>% 
   addPolylines(weight = 2) %>% 
   addPolylines(data = filter(scaling_ntwk_dat,is.na(tot_qhz_ms) == TRUE),
                color = "magenta",
@@ -325,11 +199,6 @@ leaflet(scaling_ntwk_dat) %>%
                weight = 9) %>% 
   addProviderTiles("Esri.WorldImagery")
 
-# The improvement on the network results from excluding all the comids associated
-# to the Columbia River basin
-
-scaling_analysis_dat <- int_scaling_analysis_dat %>% 
-  filter(is.na(totco2g_day)==FALSE)
 
 ################################################################################
 # Calculating Quantiles
