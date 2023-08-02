@@ -186,20 +186,9 @@ test_dat_connectivity <- scaling_analysis_dat %>%
   ungroup()
 test_dat_connectivity
 
-# Looking at the network
-
-leaflet(nsi_rcm_ntwk_dat) %>% 
-  addPolylines(weight = 2) %>% 
-  addPolylines(data = filter(nsi_rcm_ntwk_dat(tot_qhz_ms) == TRUE),
-               color = "magenta",
-               opacity = 1,
-               weight = 9) %>% 
-  addProviderTiles("Esri.WorldImagery")
-
 
 ################################################################################
 # Calculating Quantiles
-
 
 #I'm going to try calculating the quantiles with Hmisc::cut2, which allows
 # for the inclusion of zeroes
@@ -217,10 +206,82 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
   mutate(ent_cat_w = factor(Hmisc::cut2(w_hrel, g = 8),labels = qlabel),
          ent_cat_c = factor(Hmisc::cut2(c_hrel, g = 8),labels = qlabel),
          rst_cat = factor(Hmisc::cut2(t_rthz_s, g = 8),labels = qlabel),
-         hzt_cat = factor(Hmisc::cut2(t_qhz_ms, g = 8),labels = qlabel))
+         hzt_cat = factor(Hmisc::cut2(t_qhz_ms, g = 8),labels = qlabel),
+         pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 8),labels = qlabel))
 
-write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data.csv", sep = '/'),
-          row.names = FALSE)
+# write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data.csv", sep = '/'),
+#           row.names = FALSE)
+
+################################################################################
+# Raw plots
+################################################################################
+
+local_rates_plot <- ggplot(data = scaling_analysis_dat,
+                           aes(x = as.factor(stream_order),
+                               y = t_co2g_day/theor_stream_area_m2,
+                               color = as.factor(stream_order)))+
+  xlab(expression(bold("Stream order (Strahler)")))+
+  ylab(expression(bold(paste("Local respiration rates"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  geom_boxplot()+
+  scale_y_log10()+
+  facet_wrap(~basin, ncol = 2)+
+  theme(legend.position = "none")
+local_rates_plot
+ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates.png"),sep = '/'),
+       width = 12,
+       height = 18,
+       units = "in")
+
+local_rates_pcpt_plot <- ggplot(data = scaling_analysis_dat,
+                           aes(x = wshd_area_km2,
+                               y = t_co2g_day/theor_stream_area_m2,
+                             color = pct_cat))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Local respiration rates"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  scale_color_manual(values = my_dcolors, name = "Mean annual precipitation (mm) (quantiles)") +
+  facet_wrap(~basin, ncol = 2)+
+  theme(legend.position = "bottom")
+local_rates_pcpt_plot
+ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates_precipt.png"),sep = '/'),
+       width = 12,
+       height = 18,
+       units = "in")
+
+# Raw scaling plot with missing values
+
+raw_dat <- ggplot(data = scaling_analysis_dat,
+                     aes(x = wshd_area_km2,
+                         y = accm_t_co2g_day / wshd_area_km2,
+                         color = rst_cat)) +
+  geom_point(size = 2.5, alpha = 0.35) +
+  geom_point(data = scaling_analysis_dat %>%
+               filter(rst_cat == "Q80+"),
+             aes(x = wshd_area_km2,
+                 y = accm_t_co2g_day / wshd_area_km2),
+             size = 2.5) +
+  geom_abline(slope = 1, intercept = 3, linewidth = 2, linetype = "dashed") +
+  scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
+  scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
+  scale_color_manual(values = my_dcolors) +
+  xlab(expression(bold(paste("Watershed Area"," ","(", km^2, ")")))) +
+  ylab(expression(bold(paste(" Cumulative"," ", Respiration[Sed],"(", gCO[2] * network^-1 * d^-1, ")")))) +
+  guides(color = guide_legend(title = "Hyporheic residence \ntime (s) (quantiles)")) +
+  annotation_logticks(size = 0.75, sides = "tblr") +
+  theme_httn +
+  theme(legend.position = c(0.4, 0.20),
+        legend.text = element_text(size = 16),
+        legend.title = element_text(size = 18),
+        plot.title = element_text(size = 16),
+        strip.text = element_text(size = 18, face = "bold")) +
+  facet_wrap(~basin, ncol = 2)
+raw_dat
+ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_cumulative_resp_raw.png"),sep = '/'),
+       width = 12,
+       height = 18,
+       units = "in")
 
 ################################################################################
 # Data sub-setting for plots
@@ -235,6 +296,36 @@ scaling_plot_dat <- filter(scaling_analysis_dat, is.na(t_rthz_s)==FALSE)
 ################################################################################
 # WATERSHED SCALING PLOTS
 ################################################################################
+generate_inset_plot <- function(data, basin, color_var, color_scale, legend_title) {
+  plot_data <- filter(data, basin == !!basin)
+  
+  quant_i <- ggplot(data = plot_data,
+                    aes(x = wshd_area_km2,
+                        y = accm_t_co2g_day / wshd_area_km2,
+                        color = .data[[color_var]])) +
+    geom_smooth(method = "lm", fullrange = TRUE, alpha = 0.3) +
+    scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
+    scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
+    xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")")))) +
+    ylab(expression(bold(paste("Sediment respiration"," ","(", gCO[2]*m^-2*d^-1, ")")))) +
+    annotation_logticks(size = 0.75, sides = "tblr") +
+    scale_color_manual(values = color_scale) +
+    geom_abline(slope = 1, intercept = 2.5, linewidth = 2, linetype = "dashed") +
+    guides(color = guide_legend(title = legend_title)) +
+    theme_httn +
+    theme(legend.position = "none",
+          axis.title = element_blank(),
+          axis.text = element_blank(),
+          plot.title = element_text(size = 16),
+          panel.background = element_blank()) +
+    guides(alpha = "none")
+  
+  # Convert quant_i ggplot into grob
+  quant_grob <- ggplotGrob(quant_i)
+  
+  return(quant_grob)
+}
+
 generate_plot <- function(data, basin, color_var, legend_title, color_scale, plot_title, faceting = FALSE) {
   if (faceting) {
     main_quant <- ggplot(data = data %>%
@@ -300,6 +391,12 @@ generate_plot <- function(data, basin, color_var, legend_title, color_scale, plo
   return(main_quant)
 }
 ################################################################################
+# Local respiration rates and watershed area
+
+local_resp_plot <- ggplot(data = )
+
+
+
 # Landscape entropy, residence time, hyporheic exchange, and scaling
 
 # Yakima River Basin

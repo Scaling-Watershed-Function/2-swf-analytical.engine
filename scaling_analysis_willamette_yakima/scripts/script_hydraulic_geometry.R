@@ -19,14 +19,13 @@ librarian::shelf(tidyverse,
                  betareg,
                  Hmisc)
 
-source_data <- "../../1-swf-knowledge.base/datasets/raw_data/rcm_2022_model_data/data/shapefiles"
-
 scaling_int_dat <- read_csv("https://raw.githubusercontent.com/Scaling-Watershed-Function/2-swf-analytical.engine/main/scaling_analysis_willamette_yakima/data/interpolated_scaling_resp_dat.csv",
                                show_col_types = FALSE)
 
-nsi_rcm_ntwk_dat <- st_transform(st_read(paste(source_data,"river_corridors_respiration_geom.shp",sep = "/")),4326)
 
 local_data <- "./data"
+
+results <- "./results"
 
 # Checking relationship between watershed area and cumulative stream area
 
@@ -110,7 +109,7 @@ summary(d50_mod_i)
 # We find that the model excluding very low values for D50 has better performance
 
 
-# And fill d50 gaps across our dataset
+# And replace d50 values across our dataset
 
 scaling_int_dat <-  scaling_int_dat %>% 
   mutate(pred_d50_m = exp(predict.lm(d50_mod_i,.)))
@@ -198,27 +197,61 @@ scaling_int_dat <-  scaling_int_dat %>%
 
 # Checking relationship between watershed area and cumulative stream area
 
-p <- ggplot(data = scaling_int_dat,
-            aes(x =wshd_area_km2,
-                y = accm_theor_stream_area_m2))+
-  geom_point(alpha = 0.5)+
+area_inset <- ggplot(data = scaling_int_dat,
+                     aes(x =wshd_area_km2,
+                         y = accm_theor_stream_area_m2,
+                         color = basin))+
   scale_x_log10()+
   scale_y_log10()+
-  geom_abline(color = "darkred",
+  geom_abline(color = "black",
               linetype = "dashed",
-              linewidth = 1)+
-  geom_smooth(method = 'lm')+
-  facet_wrap(~basin, ncol = 2)+
-  theme_minimal()
-p
+              linewidth = 1,
+              intercept = 3.0)+
+  geom_smooth(method = 'lm',
+              fullrange = TRUE)+
+  # facet_wrap(~basin, ncol = 2)+
+  theme_minimal()+
+  theme(legend.position = "none",
+        panel.background = element_rect(fill = "gray88"),
+        axis.title = element_blank(),
+        axis.text = element_blank())
+area_inset
 
+area_ins <- ggplotGrob(area_inset)
+
+area_plot <- ggplot(data = scaling_int_dat,
+            aes(x =wshd_area_km2,
+                y = accm_theor_stream_area_m2,
+                color = basin))+
+  geom_point(alpha = 0.50)+
+  scale_x_log10()+
+  scale_y_log10()+
+  geom_abline(color = "black",
+              linetype = "dashed",
+              linewidth = 1,
+              intercept = 3.0)+
+  annotation_custom(grob = area_ins, xmin = -2, xmax = 0.5, ymin = 6, ymax = 9) +
+  annotate("text", x = 1, y = 3000000,
+            label = "paste(italic(R) ^ 2, \" ~ .95\")", parse = TRUE)+
+  annotate("text", x = 0.08, y = 500000,
+           label = "Scaling exponents \nYakima = 1.2\nWillamette = 1.15")+
+  theme_minimal()+
+  theme(legend.position = c(0.125,0.85))
+area_plot
+
+ggsave(file=paste(results, paste0("guerrero_etal_23_stream_sa_scaling.png"),sep = '/'),
+       width = 12,
+       height = 12,
+       units = "in")
 
 # Checking scaling exponents
 
 sa_exp_mod <- lm(log(accm_theor_stream_area_m2)~log(wshd_area_km2),
-                 data = filter(scaling_int_dat,basin == "yakima"))
-
+                 data = filter(scaling_int_dat,basin == "willamette"))
+summary(sa_exp_mod)
 confint(sa_exp_mod)
+
+
 
 # Confidence interval [1.145193, 1.153920] does not include 1.00 for Willamette
 # Confidence interval [1.200390, 1.213823] does not include 1.00 for Yakima
