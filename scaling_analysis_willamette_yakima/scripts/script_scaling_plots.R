@@ -39,6 +39,7 @@ librarian::shelf(tidyverse,# for plotting
                  sf,# reading shape files
                  leaflet,#creating html widget maps
                  fedmatch,# customizable merge
+                 svglite,#save plots as svg files (lighter?)
                  nhdplusTools)#across the network calculation
 
 theme_httn<-  theme(axis.text=element_text(colour="black",size=22),
@@ -207,10 +208,11 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
          ent_cat_c = factor(Hmisc::cut2(c_hrel, g = 8),labels = qlabel),
          rst_cat = factor(Hmisc::cut2(t_rthz_s, g = 8),labels = qlabel),
          hzt_cat = factor(Hmisc::cut2(t_qhz_ms, g = 8),labels = qlabel),
-         pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 8),labels = qlabel))
+         pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 8),labels = qlabel),
+         rnf_cat = factor(Hmisc::cut2(mean_ann_runf_mm, g = 8),labels = qlabel))
 
-# write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data.csv", sep = '/'),
-#           row.names = FALSE)
+write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data.csv", sep = '/'),
+          row.names = FALSE)
 
 ################################################################################
 # Raw plots
@@ -228,8 +230,8 @@ local_rates_plot <- ggplot(data = scaling_analysis_dat,
   theme(legend.position = "none")
 local_rates_plot
 ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates.png"),sep = '/'),
-       width = 12,
-       height = 18,
+       width = 18,
+       height = 12,
        units = "in")
 
 local_rates_pcpt_plot <- ggplot(data = scaling_analysis_dat,
@@ -246,8 +248,26 @@ local_rates_pcpt_plot <- ggplot(data = scaling_analysis_dat,
   theme(legend.position = "bottom")
 local_rates_pcpt_plot
 ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates_precipt.png"),sep = '/'),
-       width = 12,
-       height = 18,
+       width = 18,
+       height = 12,
+       units = "in")
+
+local_rates_runf_plot <- ggplot(data = scaling_analysis_dat,
+                                aes(x = wshd_area_km2,
+                                    y = t_co2g_day/theor_stream_area_m2,
+                                    color = rnf_cat))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+  ylab(expression(bold(paste("Local respiration rates"," ","(",gCO[2]*m^-2*d^-1,")"))))+
+  scale_color_manual(values = my_dcolors, name = "Mean annual runoff (mm) (quantiles)") +
+  facet_wrap(~basin, ncol = 2)+
+  theme(legend.position = "bottom")
+local_rates_runf_plot
+ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates_runoff.png"),sep = '/'),
+       width = 18,
+       height = 12,
        units = "in")
 
 # Raw scaling plot with missing values
@@ -279,8 +299,8 @@ raw_dat <- ggplot(data = scaling_analysis_dat,
   facet_wrap(~basin, ncol = 2)
 raw_dat
 ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_cumulative_resp_raw.png"),sep = '/'),
-       width = 12,
-       height = 18,
+       width = 18,
+       height = 12,
        units = "in")
 
 ################################################################################
@@ -391,27 +411,21 @@ generate_plot <- function(data, basin, color_var, legend_title, color_scale, plo
   return(main_quant)
 }
 ################################################################################
-# Local respiration rates and watershed area
-
-local_resp_plot <- ggplot(data = )
-
-
-
-# Landscape entropy, residence time, hyporheic exchange, and scaling
+# Landscape entropy, residence time, hyporheic exchange, mean annual runoff, and scaling
 
 # Yakima River Basin
 
 # Landscape entropy
 plot_basin_abbv <- "yrb"
-ykm_ent_quant <- generate_plot(data = scaling_plot_dat,
+plot_quant <- generate_plot(data = scaling_plot_dat,
                                basin = "yakima",
-                               color_var = "ent_cat_c",
+                               color_var = "ent_cat_w",
                                legend_title = "Landscape Entropy\n(quantiles)",
                                color_scale = my_mcolors,
                                plot_title = "Yakima River Basin",
                                faceting = TRUE)
 
-print(ykm_ent_quant)
+print(plot_quant)
 ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.png"),sep = '/'),
        width = 12,
        height = 12,
@@ -419,9 +433,22 @@ ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_
 
 # If faceting = TRUE
 ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_entropy.png"),sep = '/'),
-       width = 18,
+       width = 20,
        height = 12,
        units = "in")
+
+# Save the plot as an SVG file
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_entropy.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(plot_quant)
+dev.off()
+
+# Create an HTML file that embeds the SVG
+html_code <- '<html><body><img src="myplot.svg"></body></html>'
+writeLines(html_code, 
+           con = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_entropy.html"),sep = '/'))
 
 # Residence time
 ykm_rst_quant <- generate_plot(data = scaling_plot_dat,
