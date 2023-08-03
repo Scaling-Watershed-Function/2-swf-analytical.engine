@@ -135,6 +135,7 @@ scaling_plot_dat <- filter(scaling_analysis_dat, is.na(t_rthz_s)==FALSE)
 new.labs <- c("HZt-Q10","HZt-Q20", "HZt-Q30","HZt-Q40","HZt-Q50",
               "HZt-Q60","HZt-Q70","HZt-Q80+")
 names(new.labs) <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80+")
+new.labs <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80+")
 
 landuse_scaling_dat <- scaling_plot_dat %>% 
   select(wshd_area_km2,
@@ -198,12 +199,14 @@ generate_lnd_plot <- function(data,basin,wrap_cat_var,plot_title){
 plot_basin_abbv <- "wrb"
 land_hzt_quant <- generate_lnd_plot(data = landuse_scaling_dat,
                                     basin = "willamette",
-                                    wrap_cat_var = "rst_cat",
+                                    wrap_cat_var = "ent_cat_w",
                                     plot_title = "Willamette River Basin")
 
 print(land_hzt_quant)
-ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_landuse_hzt.png"),sep = '/'),
-       width = 12,
+ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_landuse_entropy.png"),sep = '/'),
+       width = 18,
        height = 12,
        units = "in")
+
+summary(scaling_analysis_dat %>% filter(basin == "willamette"))
 
