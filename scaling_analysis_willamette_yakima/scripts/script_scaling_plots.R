@@ -229,10 +229,16 @@ local_rates_plot <- ggplot(data = scaling_analysis_dat,
   facet_wrap(~basin, ncol = 2)+
   theme(legend.position = "none")
 local_rates_plot
-ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates.png"),sep = '/'),
-       width = 18,
-       height = 12,
-       units = "in")
+# ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates.png"),sep = '/'),
+#        width = 18,
+#        height = 12,
+#        units = "in")
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(local_rates_plot)
+dev.off()
 
 local_rates_pcpt_plot <- ggplot(data = scaling_analysis_dat,
                            aes(x = wshd_area_km2,
@@ -247,10 +253,17 @@ local_rates_pcpt_plot <- ggplot(data = scaling_analysis_dat,
   facet_wrap(~basin, ncol = 2)+
   theme(legend.position = "bottom")
 local_rates_pcpt_plot
-ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates_precipt.png"),sep = '/'),
-       width = 18,
-       height = 12,
-       units = "in")
+# ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates_precipt.png"),sep = '/'),
+#        width = 18,
+#        height = 12,
+#        units = "in")
+# Save the plot as an SVG file
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(plot_quant)
+dev.off()
 
 local_rates_runf_plot <- ggplot(data = scaling_analysis_dat,
                                 aes(x = wshd_area_km2,
@@ -423,13 +436,21 @@ plot_quant <- generate_plot(data = scaling_plot_dat,
                                legend_title = "Landscape Entropy\n(quantiles)",
                                color_scale = my_mcolors,
                                plot_title = "Yakima River Basin",
-                               faceting = TRUE)
+                               faceting = FALSE)
 
 print(plot_quant)
 ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.png"),sep = '/'),
        width = 12,
        height = 12,
        units = "in")
+
+# Save the plot as an SVG file
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(plot_quant)
+dev.off()
 
 # If faceting = TRUE
 ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_entropy.png"),sep = '/'),
