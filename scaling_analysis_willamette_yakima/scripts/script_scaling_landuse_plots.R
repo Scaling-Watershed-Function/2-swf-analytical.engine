@@ -39,7 +39,9 @@ librarian::shelf(tidyverse,# for plotting
                  sf,# reading shape files
                  leaflet,#creating html widget maps
                  fedmatch,# customizable merge
-                 nhdplusTools)#across the network calculation
+                 nhdplusTools,#across the network calculation
+                 htmlwidgets,
+                 RCurl)
 
 theme_httn<-  theme(axis.text=element_text(colour="black",size=22),
                     axis.title = element_text(size = 32, face = "bold"),
@@ -162,7 +164,7 @@ landuse_scaling_dat <- scaling_plot_dat %>%
 # Creating the plot
 
 generate_lnd_plot <- function(data,basin,wrap_cat_var,plot_title){
-  plot <- ggplot(data = data %>% 
+  ggplot_obj <- ggplot(data = data %>% 
                    filter(basin == !!basin),
                  aes(x = wshd_area_km2,
                      y = accm_t_co2g_day/wshd_area_km2,
@@ -190,8 +192,12 @@ generate_lnd_plot <- function(data,basin,wrap_cat_var,plot_title){
           strip.text = element_text(size = 16, face = "bold"))+
     ggtitle(plot_title)
   
-  return(plot)
+  return(ggplot_obj)
+  
 }
+
+
+# Generate the plot using the function
 
 # Hyporheic residence time and land use
 
@@ -203,6 +209,51 @@ land_hzt_quant <- generate_lnd_plot(data = landuse_scaling_dat,
                                     plot_title = "Willamette River Basin")
 
 print(land_hzt_quant)
+
+
+encodeGraphic <- function(g) {
+  png(tf1 <- tempfile(fileext = ".png"))  # Get an unused filename in the session's temporary directory, and open that file for .png structured output.
+  print(g)  # Output a graphic to the file
+  dev.off()  # Close the file.
+  txt <- RCurl::base64Encode(readBin(tf1, "raw", file.info(tf1)[1, "size"]), "txt")  # Convert the graphic image to a base 64 encoded string.
+  myImage <- htmltools::HTML(sprintf('<img src="data:image/png;base64,%s">', txt))  # Save the image as a markdown-friendly html object.
+  return(myImage)
+}
+
+HTMLOut <- "./results/TEST.html"   # Say where to save the html file.
+hg <- encodeGraphic(land_hzt_quant)  # run the function that base64 encodes the graph
+# Create the HTML elements
+header <- htmltools::h1("Interaction between landscape heterogeneity and scaling")
+paragraph <- htmltools::p("Sublinear scaling")
+your_widget <- ...  # Replace this with your HTML widget object (e.g., ggplot2 plot)
+
+# Combine the elements into a list
+forHTML <- list(header, paragraph, your_widget)
+
+# Save the list of HTML elements as an HTML file
+file_path <- "./results/TEST.html"
+htmltools::save_html(forHTML, file = file_path)
+
+
+forHTML <- list(h1("Interaction between landscape heterogeneity and scaling"), p("Sublinear scaling"), hg)
+save_html(forHTML, HTMLOut)  # output it to the html file.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+saveWidget(ggplotly(land_hzt_quant), file = "./results/test.html");
+
 ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_landuse_entropy.png"),sep = '/'),
        width = 18,
        height = 12,
