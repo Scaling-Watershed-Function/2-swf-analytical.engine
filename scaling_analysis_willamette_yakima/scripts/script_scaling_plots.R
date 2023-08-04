@@ -208,11 +208,18 @@ rf_scaling_analyst_dat <- scaling_analysis_dat %>%
          D50_m = d50_m) %>% 
   merge(.,
         current_2020_hyporheic_dat %>% 
-          select(c(logRT_lateral_hz_s,
+          select(c(comid,
+                   logRT_lateral_hz_s,
                    logRT_vertical_hz_s,
                    logq_hz_lateral_m_div_s,
-                   logq_hz_vertical_m_div_s)))
+                   logq_hz_vertical_m_div_s)),
+        by = "comid",
+        all.x = TRUE)
 
+summary(rf_scaling_analyst_dat)
+
+write.csv(scaling_analysis_dat,paste(local_data,"rf_scaling_analysis_data.csv", sep = '/'),
+          row.names = FALSE)
 
 ################################################################################
 # Calculating Quantiles
