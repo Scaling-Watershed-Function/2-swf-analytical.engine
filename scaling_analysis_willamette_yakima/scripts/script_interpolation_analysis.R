@@ -201,7 +201,21 @@ slope_plot_4 <- ggplot(data = reach_slope_int,
   theme(legend.position = "none")
 slope_plot_4
 
+# Hyporheic variables associated to d50 == 0.000001, should be labelled as NA, 
+# because they are linked to assigned constant slope values of 0.00001 (1 e-8 when
+# expressed as m/m instead of m/km), which has been shown to produce distributional 
+# anomalies when compared to measured slopes in stream channels (Schwartz et al., 2019).
+
 scaling_resp_prcssd_dat_1 <- scaling_resp_raw_dat %>%
+  mutate(d50_m = ifelse(reach_slope == 0.00000001,
+                        NA,
+                        d50_m),
+         t_rthz_s = ifelse(reach_slope == 0.00000001,
+                             NA,
+                           t_rthz_s),
+         t_qhz_ms = ifelse(reach_slope == 0.00000001,
+                           NA,
+                           t_rthz_s)) %>% 
   select(-c(reach_slope,roughness,t_co2g_day)) %>% 
   merge(.,
         roughness_int %>% 
@@ -223,7 +237,6 @@ scaling_resp_prcssd_dat_1 <- scaling_resp_raw_dat %>%
         all.x = TRUE) 
 
 summary(scaling_resp_prcssd_dat_1)
-
 
 # We observe a number of datapoints with reach_slope = 0.00000001. These correspond
 # to default values assigned at NHDPlus when no other values were available.  Let's

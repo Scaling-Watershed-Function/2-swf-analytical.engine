@@ -116,6 +116,9 @@ ctch_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Sc
 wshd_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_landscape_heterogeneity/data/watershed_landscape_heterogeneity_pnw.csv",
                                    show_col_types = FALSE)
 
+scaling_interpolated_dat <- read_csv("https://raw.githubusercontent.com/Scaling-Watershed-Function/2-swf-analytical.engine/main/scaling_analysis_willamette_yakima/data/interpolated_scaling_resp_dat.csv",
+                                     show_col_types = FALSE)
+
 local_data <- "./data"
 
 results <- "./results"
@@ -125,6 +128,10 @@ results <- "./results"
 # Merging data
 
 scaling_analysis_dat <- scaling_hydraul_geom_dat %>% 
+          mutate(d50_m = pred_d50_m,
+                 stream_width_m = theor_stream_width_m,
+                 accm_stream_area_m2 = accm_theor_stream_area_m2,
+                 stream_area_m2 = theor_stream_area_m2) %>% 
   merge(.,
         wshd_heterogeneity_dat %>% 
           select(comid,
