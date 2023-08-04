@@ -85,6 +85,20 @@ d50_plot_2 <- ggplot(data = scaling_int_dat,
   theme(legend.position = "none")
 d50_plot_2
 
+d50_plot_3 <- ggplot(data = scaling_int_dat %>% 
+                       filter(d50_m == 0.000001),
+                     aes(x = wshd_area_km2,
+                         y = d50_m,
+                         color = as.factor(stream_order)))+
+  geom_point(alpha = 0.5)+
+  scale_x_log10()+
+  scale_y_log10()+
+  labs(x = "Watershed area (km2)", y = "Median particle size (m)")+
+  facet_wrap(~basin, ncol = 2)+
+  theme_minimal()+
+  theme(legend.position = "none")
+d50_plot_3
+
 # We can observe that the data is constrained by minimum and max values. We run 
 # a regression based on Lee and Julien (2006) which based on hydraulic geometry 
 # principles defines an equivalence between channel width and D50. We will run an 
@@ -97,28 +111,13 @@ d50_mod <- lm(log(d50_m)~(log(bnkfll_width_m)+log(reach_slope)+
 
 summary(d50_mod)
 
-# Let's check model performance excluding default values for reach slope (>0.00001)
-
-d50_mod_i <- lm(log(d50_m)~(log(bnkfll_width_m)+log(reach_slope)+
-             log(mean_ann_flow_m3s))*basin+stream_order,
-              data = filter(scaling_int_dat, d50_m > 0.00001),
-              na.action = na.omit)
-
-summary(d50_mod_i)
-
-# We find that the model excluding very low values for D50 has better performance
-
 
 # And replace d50 values across our dataset
 
 scaling_int_dat <-  scaling_int_dat %>% 
-  mutate(pred_d50_m = exp(predict.lm(d50_mod_i,.)))
+  mutate(pred_d50_m = exp(predict.lm(d50_mod,.)))
 summary(scaling_int_dat)
 
-# We find that the model has a ~260  prediction below the threshold for exclusion, 
-# represents 1.6% of the data compared to the initial 742 values in the same category
-
-filter(scaling_int_dat, d50_m < 0.00001)
 
 # Comparing exisiting vs. predicted d50 data
 
@@ -137,7 +136,7 @@ p <- ggplot(data = scaling_int_dat %>%
   theme_minimal()
 p
 
-# mean annual runoff creat at least two group values in Yakima River Basin
+# mean annual runoff separates at least two groups of values in Yakima River Basin
 
 p <- ggplot(data = scaling_int_dat %>% 
               filter(is.na(d50_m)==FALSE),
@@ -197,6 +196,13 @@ scaling_int_dat <-  scaling_int_dat %>%
 
 # Checking relationship between watershed area and cumulative stream area
 
+# Checking scaling exponents
+
+sa_exp_mod <- lm(log(accm_theor_stream_area_m2)~log(wshd_area_km2),
+                 data = filter(scaling_int_dat,basin == "yakima"))
+summary(sa_exp_mod)
+confint(sa_exp_mod)
+
 area_inset <- ggplot(data = scaling_int_dat,
                      aes(x =wshd_area_km2,
                          y = accm_theor_stream_area_m2,
@@ -215,8 +221,6 @@ area_inset <- ggplot(data = scaling_int_dat,
         panel.background = element_rect(fill = "gray88"),
         axis.title = element_blank(),
         axis.text = element_blank())
-area_inset
-
 area_ins <- ggplotGrob(area_inset)
 
 area_plot <- ggplot(data = scaling_int_dat,
@@ -230,44 +234,28 @@ area_plot <- ggplot(data = scaling_int_dat,
               linetype = "dashed",
               linewidth = 1,
               intercept = 3.0)+
-  annotation_custom(grob = area_ins, xmin = -2, xmax = 0.5, ymin = 6, ymax = 9) +
-  annotate("text", x = 1, y = 3000000,
+  annotation_custom(grob = area_ins, xmin = -2, xmax = 0.5, ymin = 6.5, ymax = 9.5) +
+  annotate("text", x = 1, y = 9200000,
             label = "paste(italic(R) ^ 2, \" ~ .95\")", parse = TRUE)+
-  annotate("text", x = 0.08, y = 500000,
-           label = "Scaling exponents \nYakima = 1.2\nWillamette = 1.15")+
+  annotate("text", x = 0.008, y = 1250000,
+           label = "Scaling exponents \nYakima = 95% c.i. [1.19 -1.20]\nWillamette = 95% c.i.[1.13 - 1.14]",
+           hjust = 0)+
   theme_minimal()+
-  theme(legend.position = c(0.125,0.85))
+  theme(legend.position = "right")
 area_plot
 
-ggsave(file=paste(results, paste0("guerrero_etal_23_stream_sa_scaling.png"),sep = '/'),
-       width = 12,
-       height = 12,
-       units = "in")
-
-# Checking scaling exponents
-
-sa_exp_mod <- lm(log(accm_theor_stream_area_m2)~log(wshd_area_km2),
-                 data = filter(scaling_int_dat,basin == "willamette"))
-summary(sa_exp_mod)
-confint(sa_exp_mod)
-
-
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_stream_sa_scaling.svg"),sep = '/'),
+                 width = 12,
+                 height = 12,
+                 bg = "transparent")
+print(area_plot)
+dev.off()
 
 # Confidence interval [1.145193, 1.153920] does not include 1.00 for Willamette
 # Confidence interval [1.200390, 1.213823] does not include 1.00 for Yakima
 
-# We replace d50 and stream area by the predicted values based on hydraulic geometry
-
-scaling_hydraul_geom_dat <- scaling_int_dat #%>% 
-#   mutate(stream_area_m2 = theor_stream_area_m2,
-#          stream_width_m = theor_stream_width_m,
-#          d50_m = pred_d50_m,
-#          accm_stream_area_m2 = accm_theor_stream_area_m2) %>% 
-#   select(-c(theor_stream_area_m2,
-#             theor_stream_width_m,
-#             pred_d50_m,
-#             accm_theor_stream_area_m2))
-
 # Saving New dataset
+scaling_hydraul_geom_dat <- scaling_int_dat  
+
 write.csv(scaling_hydraul_geom_dat,paste(local_data,"hydraulic_geom_scaling_resp_dat.csv", sep = '/'),
           row.names = FALSE)
