@@ -236,6 +236,8 @@ write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data
 
 # With the correspondent modifications to the file name and dimensions. 
 
+# Local respiration rates and stream order
+
 local_rates_plot <- ggplot(data = scaling_analysis_dat,
                            aes(x = as.factor(stream_order),
                                y = t_co2g_day/theor_stream_area_m2,
@@ -257,35 +259,7 @@ svglite::svglite(file = paste(results, paste0("guerrero_etal_23_scaling_local_re
 print(local_rates_plot)
 dev.off()
 
-
-
-
-
-
-local_rates_pcpt_plot <- ggplot(data = scaling_analysis_dat,
-                           aes(x = wshd_area_km2,
-                               y = t_co2g_day/theor_stream_area_m2,
-                             color = pct_cat))+
-  geom_point()+
-  scale_x_log10()+
-  scale_y_log10()+
-  xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
-  ylab(expression(bold(paste("Local respiration rates"," ","(",gCO[2]*m^-2*d^-1,")"))))+
-  scale_color_manual(values = my_dcolors, name = "Mean annual precipitation (mm) (quantiles)") +
-  facet_wrap(~basin, ncol = 2)+
-  theme(legend.position = "bottom")
-local_rates_pcpt_plot
-# ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates_precipt.png"),sep = '/'),
-#        width = 18,
-#        height = 12,
-#        units = "in")
-# Save the plot as an SVG file
-svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.svg"),sep = '/'),
-                 width = 20,
-                 height = 12,
-                 bg = "transparent")
-print(plot_quant)
-dev.off()
+# Local respiration rates and runoff
 
 local_rates_runf_plot <- ggplot(data = scaling_analysis_dat,
                                 aes(x = wshd_area_km2,
@@ -300,43 +274,41 @@ local_rates_runf_plot <- ggplot(data = scaling_analysis_dat,
   facet_wrap(~basin, ncol = 2)+
   theme(legend.position = "bottom")
 local_rates_runf_plot
-ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates_runoff.png"),sep = '/'),
-       width = 18,
-       height = 12,
-       units = "in")
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates_runoff.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(local_rates_runf_plot)
+dev.off()
 
 # Raw scaling plot with missing values
 
-raw_dat <- ggplot(data = scaling_analysis_dat,
+raw_dat_plot <- ggplot(data = scaling_analysis_dat,
                      aes(x = wshd_area_km2,
                          y = accm_t_co2g_day / wshd_area_km2,
                          color = rst_cat)) +
   geom_point(size = 2.5, alpha = 0.35) +
-  geom_point(data = scaling_analysis_dat %>%
-               filter(rst_cat == "Q80+"),
-             aes(x = wshd_area_km2,
-                 y = accm_t_co2g_day / wshd_area_km2),
-             size = 2.5) +
+  scale_x_log10()+
+  scale_y_log10()+
+  # geom_point(data = scaling_analysis_dat %>%
+  #              filter(rst_cat == "Q80+"),
+  #            aes(x = wshd_area_km2,
+  #                y = accm_t_co2g_day / wshd_area_km2),
+  #            size = 2.5) +
   geom_abline(slope = 1, intercept = 3, linewidth = 2, linetype = "dashed") +
-  scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
-  scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
   scale_color_manual(values = my_dcolors) +
   xlab(expression(bold(paste("Watershed Area"," ","(", km^2, ")")))) +
   ylab(expression(bold(paste(" Cumulative"," ", Respiration[Sed],"(", gCO[2] * network^-1 * d^-1, ")")))) +
   guides(color = guide_legend(title = "Hyporheic residence \ntime (s) (quantiles)")) +
-  annotation_logticks(size = 0.75, sides = "tblr") +
-  theme_httn +
-  theme(legend.position = c(0.4, 0.20),
-        legend.text = element_text(size = 16),
-        legend.title = element_text(size = 18),
-        plot.title = element_text(size = 16),
-        strip.text = element_text(size = 18, face = "bold")) +
+  theme(legend.position = "bottom") +
   facet_wrap(~basin, ncol = 2)
-raw_dat
-ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_cumulative_resp_raw.png"),sep = '/'),
-       width = 18,
-       height = 12,
-       units = "in")
+raw_dat_plot
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_scaling_cumulative_respiration_rates_residence_time.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(raw_dat_plot)
+dev.off()
 
 ################################################################################
 # Data sub-setting for plots
@@ -453,34 +425,23 @@ generate_plot <- function(data, basin, color_var, legend_title, color_scale, plo
 # Landscape entropy
 plot_basin_abbv <- "yrb"
 plot_quant <- generate_plot(data = scaling_plot_dat,
-                               basin = "yakima",
+                               basin = "Yakima River",
                                color_var = "ent_cat_w",
                                legend_title = "Landscape Entropy\n(quantiles)",
                                color_scale = my_mcolors,
                                plot_title = "Yakima River Basin",
-                               faceting = FALSE)
+                               faceting = TRUE)
 
 print(plot_quant)
-ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.png"),sep = '/'),
-       width = 12,
-       height = 12,
-       units = "in")
-
 # Save the plot as an SVG file
 svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.svg"),sep = '/'),
-                 width = 20,
+                 width =12,
                  height = 12,
                  bg = "transparent")
 print(plot_quant)
 dev.off()
 
 # If faceting = TRUE
-ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_entropy.png"),sep = '/'),
-       width = 20,
-       height = 12,
-       units = "in")
-
-# Save the plot as an SVG file
 svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_entropy.svg"),sep = '/'),
                  width = 20,
                  height = 12,
@@ -488,33 +449,33 @@ svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abb
 print(plot_quant)
 dev.off()
 
-# Create an HTML file that embeds the SVG
-html_code <- '<html><body><img src="myplot.svg"></body></html>'
-writeLines(html_code, 
-           con = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_entropy.html"),sep = '/'))
 
-# Residence time
-ykm_rst_quant <- generate_plot(data = scaling_plot_dat,
-                               basin = "yakima",
-                               color_var = "rst_cat",
-                               legend_title = "Residence time (s)\n(quantiles)",
+# Mean Annual Runoff
+plot_quant <- generate_plot(data = scaling_plot_dat,
+                               basin = "Yakima River",
+                               color_var = "rnf_cat",
+                               legend_title = "Mean annual\nrunoff (mm)\n(quantiles)",
                                color_scale = my_dcolors,
                                plot_title = "Yakima River Basin",
                                faceting = TRUE)
 
-print(ykm_rst_quant)
-ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_res_time.png"),sep = '/'),
-       width = 12,
-       height = 12,
-       units = "in")
+print(plot_quant)
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_mean_runoff.svg"),sep = '/'),
+                 width =12,
+                 height = 12,
+                 bg = "transparent")
+print(plot_quant)
+dev.off()
 
 # If faceting = TRUE
-ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_res_time.png"),sep = '/'),
-       width = 18,
-       height = 12,
-       units = "in")
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_mean_runoff.svg"),sep = '/'),
+                 width =20,
+                 height = 12,
+                 bg = "transparent")
+print(plot_quant)
+dev.off()
 
-
+#################################### Replace code below #######################
 # Willamette River Basin
 
 # Landscape entropy
