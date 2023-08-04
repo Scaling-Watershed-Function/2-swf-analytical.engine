@@ -115,9 +115,9 @@ ctch_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Sc
                                    show_col_types = FALSE)  
 wshd_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_landscape_heterogeneity/data/watershed_landscape_heterogeneity_pnw.csv",
                                    show_col_types = FALSE)
+current_2020_hyporheic_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/raw_data/rcm_2022_hyporheic_provisional/data/current20_hyporheic_pnw_data.csv",
+                                       show_col_types = FALSE)
 
-scaling_interpolated_dat <- read_csv("https://raw.githubusercontent.com/Scaling-Watershed-Function/2-swf-analytical.engine/main/scaling_analysis_willamette_yakima/data/interpolated_scaling_resp_dat.csv",
-                                     show_col_types = FALSE)
 
 local_data <- "./data"
 
@@ -194,6 +194,24 @@ test_dat_connectivity <- scaling_analysis_dat %>%
   summarise(across(c("tot_comid", "accm_inc_comid", "connectivity_index"), max)) %>% 
   ungroup()
 test_dat_connectivity
+
+# Generating dataset for RF model
+
+rf_scaling_analyst_dat <- scaling_analysis_dat %>% 
+  mutate(logQ_m3_div_s = log10(mean_ann_flow_m3s),
+         logDA_km2 = log10(wshd_area_km2),
+         logw_m = log10(stream_width_m),
+         length_m = reach_length_km*1000,
+         logwbkf_m = log10(bnkfll_width_m),
+         logdbkf_m = log10(bnkfll_depth_m),
+         logSlope = log10(reach_slope),
+         D50_m = d50_m) %>% 
+  merge(.,
+        current_2020_hyporheic_dat %>% 
+          select(c(logRT_lateral_hz_s,
+                   logRT_vertical_hz_s,
+                   logq_hz_lateral_m_div_s,
+                   logq_hz_vertical_m_div_s)))
 
 
 ################################################################################
