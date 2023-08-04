@@ -40,6 +40,7 @@ librarian::shelf(tidyverse,# for plotting
                  leaflet,#creating html widget maps
                  fedmatch,# customizable merge
                  svglite,#save plots as svg files (lighter?)
+                 knitr,#compiling r-makrdown/quarto docs
                  nhdplusTools)#across the network calculation
 
 theme_httn<-  theme(axis.text=element_text(colour="black",size=22),
@@ -209,7 +210,11 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
          rst_cat = factor(Hmisc::cut2(t_rthz_s, g = 8),labels = qlabel),
          hzt_cat = factor(Hmisc::cut2(t_qhz_ms, g = 8),labels = qlabel),
          pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 8),labels = qlabel),
-         rnf_cat = factor(Hmisc::cut2(mean_ann_runf_mm, g = 8),labels = qlabel))
+         rnf_cat = factor(Hmisc::cut2(mean_ann_runf_mm, g = 8),labels = qlabel),
+         sto_fct = as.factor(stream_order),
+         basin = if_else(basin == "yakima",
+                         "Yakima River",
+                         "Willamette River"))
 
 write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data.csv", sep = '/'),
           row.names = FALSE)
@@ -218,27 +223,44 @@ write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data
 # Raw plots
 ################################################################################
 
+# Note: I'm saving these plots as svg files because is not only the appropriate
+# format for plot resolution, but also because is three times ligther than the
+# PNG version.
+
+# To save any of these plots as a png you can use: 
+
+# ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates.png"),sep = '/'),
+#        width = 18,
+#        height = 12,
+#        units = "in")
+
+# With the correspondent modifications to the file name and dimensions. 
+
 local_rates_plot <- ggplot(data = scaling_analysis_dat,
                            aes(x = as.factor(stream_order),
                                y = t_co2g_day/theor_stream_area_m2,
-                               color = as.factor(stream_order)))+
+                               color = sto_fct))+
   xlab(expression(bold("Stream order (Strahler)")))+
   ylab(expression(bold(paste("Local respiration rates"," ","(",gCO[2]*m^-2*d^-1,")"))))+
   geom_boxplot()+
   scale_y_log10()+
   facet_wrap(~basin, ncol = 2)+
-  theme(legend.position = "none")
+  theme_httn+
+  theme(legend.position = "none",
+        plot.title = element_text(size = 16),
+        strip.text = element_text(size = 16, face = "bold"))
 local_rates_plot
-# ggsave(file=paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates.png"),sep = '/'),
-#        width = 18,
-#        height = 12,
-#        units = "in")
 svglite::svglite(file = paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates.svg"),sep = '/'),
                  width = 20,
                  height = 12,
                  bg = "transparent")
 print(local_rates_plot)
 dev.off()
+
+
+
+
+
 
 local_rates_pcpt_plot <- ggplot(data = scaling_analysis_dat,
                            aes(x = wshd_area_km2,
