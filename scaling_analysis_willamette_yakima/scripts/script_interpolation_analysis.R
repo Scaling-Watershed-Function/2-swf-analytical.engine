@@ -141,18 +141,6 @@ roughness_int <- interpolate_missing_values(data = scaling_resp_raw_dat %>%
                                                      roughness),
                                             column = "roughness",
                                             regression = TRUE)
-# Total Respiration (10 NAs)
-totco2_int <- interpolate_missing_values(data = scaling_resp_raw_dat %>% 
-                                           select(comid,
-                                                  tocomid,
-                                                  basin,
-                                                  stream_order,
-                                                  mean_ann_pcpt_mm,
-                                                  wshd_area_km2,
-                                                  t_co2g_day),
-                                         "t_co2g_day",
-                                         regression = TRUE)
-
 # Reach slope (NAs = 1301)
 reach_slope_int <- interpolate_missing_values(data = scaling_resp_raw_dat %>% 
                                                 mutate(reach_slope = ifelse(reach_slope == 0.00000001,
@@ -167,12 +155,69 @@ reach_slope_int <- interpolate_missing_values(data = scaling_resp_raw_dat %>%
                                                        reach_slope),
                                               "reach_slope",
                                               regression = TRUE)
-
-
-
-summary(roughness_int)
 summary(reach_slope_int)
+
+# We will also interpolate nutrient concentrations using the same algorithm.
+
+# Let's first check if setting the regression function as FALSE generates NA values
+
+# Total Respiration (10 NAs)
+totco2_int <- interpolate_missing_values(data = scaling_resp_raw_dat %>% 
+                                           select(comid,
+                                                  tocomid,
+                                                  basin,
+                                                  stream_order,
+                                                  mean_ann_pcpt_mm,
+                                                  wshd_area_km2,
+                                                  totco2g_day),
+                                         "totco2g_day",
+                                         regression = FALSE)
+
 summary(totco2_int)
+
+# DO
+do_int <- interpolate_missing_values(data = scaling_resp_raw_dat %>% 
+                                           select(comid,
+                                                  tocomid,
+                                                  basin,
+                                                  stream_order,
+                                                  mean_ann_pcpt_mm,
+                                                  wshd_area_km2,
+                                                  do_stream_mg_l),
+                                         "do_stream_mg_l",
+                                         regression = FALSE)
+
+summary(do_int)
+
+
+# DOC
+doc_int <- interpolate_missing_values(data = scaling_resp_raw_dat %>% 
+                                       select(comid,
+                                              tocomid,
+                                              basin,
+                                              stream_order,
+                                              mean_ann_pcpt_mm,
+                                              wshd_area_km2,
+                                              doc_stream_mg_l),
+                                     "doc_stream_mg_l",
+                                     regression = FALSE)
+
+summary(doc_int)
+
+# NO3
+no3_int <- interpolate_missing_values(data = scaling_resp_raw_dat %>% 
+                                        select(comid,
+                                               tocomid,
+                                               basin,
+                                               stream_order,
+                                               mean_ann_pcpt_mm,
+                                               wshd_area_km2,
+                                               no3_stream_mg_l),
+                                      "no3_stream_mg_l",
+                                      regression = FALSE)
+
+summary(no3_int)
+
 
 
 slope_plot_3 <- ggplot(data = reach_slope_int,
@@ -207,35 +252,31 @@ slope_plot_4
 # anomalies when compared to measured slopes in stream channels (Schwartz et al., 2019).
 
 scaling_resp_prcssd_dat_1 <- scaling_resp_raw_dat %>%
-  mutate(d50_m = ifelse(reach_slope == 0.00000001,
-                        NA,
-                        d50_m),
-         t_rthz_s = ifelse(reach_slope == 0.00000001,
-                             NA,
-                           t_rthz_s),
-         t_qhz_ms = ifelse(reach_slope == 0.00000001,
-                           NA,
-                           t_rthz_s)) %>% 
-  select(-c(reach_slope,roughness,t_co2g_day)) %>% 
-  merge(.,
-        roughness_int %>% 
-          select(comid,
-                 roughness),
-        by = "comid",
-        all.x = TRUE) %>% 
-  merge(.,
-        reach_slope_int %>% 
-          select(comid,
-                 reach_slope),
-        by = "comid",
-        all.x = TRUE) %>% 
-  merge(.,
-        totco2_int %>% 
-          select(comid,
-                 t_co2g_day),
-        by = "comid",
-        all.x = TRUE) 
+  mutate_at(vars(d50_m,
+                 tot_rt_hz_s,
+                 tot_q_hz_ms,
+                 logrt_total_hz_s,
+                 logq_hz_total_m_s,
+                 logRT_vertical_hz_s,
+                 logRT_lateral_hz_s,
+                 logq_hz_vertical_m_div_s,
+                 logq_hz_lateral_m_div_s),
+            ~ if_else(d50_m == 0.000001, NA, .)) %>% 
+  select(-c(reach_slope,
+            roughness,
+            totco2g_day,
+            do_stream_mg_l,
+            doc_stream_mg_l,
+            no3_stream_mg_l)) 
 
+scaling_resp_prcssd_dat_1 <- scaling_resp_prcssd_dat_1 %>%
+  merge(.,reach_slope_int %>% select(comid,reach_slope), by = "comid",all.x = TRUE) %>%
+  merge(.,roughness_int %>% select(comid,roughness), by = "comid",all.x = TRUE) %>%
+  merge(.,totco2_int %>% select(comid,totco2g_day), by = "comid",all.x = TRUE) %>%
+  merge(.,do_int %>% select(comid,do_stream_mg_l), by = "comid",all.x = TRUE) %>%
+  merge(.,doc_int %>% select(comid,doc_stream_mg_l), by = "comid",all.x = TRUE) %>%
+  merge(.,no3_int %>% select(comid,no3_stream_mg_l), by = "comid",all.x = TRUE) 
+  
 summary(scaling_resp_prcssd_dat_1)
 
 # We observe a number of datapoints with reach_slope = 0.00000001. These correspond
@@ -258,7 +299,7 @@ scaling_resp_prcssd_dat_2 <-  scaling_resp_prcssd_dat_1 %>%
                   ctch_stream_dens,
                   ctch_basin_slope,
                   reach_slope,
-                  t_co2g_day,
+                  totco2g_day,
                   stream_area_m2), ~ calculate_arbolate_sum(data.frame(ID = comid,
                                                                        toID = tocomid,
                                                                        length = .x))) %>% 
