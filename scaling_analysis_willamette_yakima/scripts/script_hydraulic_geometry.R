@@ -85,19 +85,6 @@ d50_plot_2 <- ggplot(data = scaling_int_dat,
   theme(legend.position = "none")
 d50_plot_2
 
-d50_plot_3 <- ggplot(data = scaling_int_dat %>% 
-                       filter(d50_m == 0.000001),
-                     aes(x = wshd_area_km2,
-                         y = d50_m,
-                         color = as.factor(stream_order)))+
-  geom_point(alpha = 0.5)+
-  scale_x_log10()+
-  scale_y_log10()+
-  labs(x = "Watershed area (km2)", y = "Median particle size (m)")+
-  facet_wrap(~basin, ncol = 2)+
-  theme_minimal()+
-  theme(legend.position = "none")
-d50_plot_3
 
 # We can observe that the data is constrained by minimum and max values. We run 
 # a regression based on Lee and Julien (2006) which based on hydraulic geometry 
