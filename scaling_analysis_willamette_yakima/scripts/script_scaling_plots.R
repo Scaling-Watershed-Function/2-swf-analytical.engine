@@ -132,6 +132,10 @@ scaling_analysis_dat <- scaling_hydraul_geom_dat %>%
                  stream_width_m = theor_stream_width_m,
                  accm_stream_area_m2 = accm_theor_stream_area_m2,
                  stream_area_m2 = theor_stream_area_m2) %>% 
+  select(-c(pred_d50_m,
+            theor_stream_width_m,
+            accm_theor_stream_area_m2,
+            theor_stream_area_m2)) %>% 
   merge(.,
         wshd_heterogeneity_dat %>% 
           select(comid,
@@ -205,20 +209,11 @@ rf_scaling_analyst_dat <- scaling_analysis_dat %>%
          logwbkf_m = log10(bnkfll_width_m),
          logdbkf_m = log10(bnkfll_depth_m),
          logSlope = log10(reach_slope),
-         D50_m = d50_m) %>% 
-  merge(.,
-        current_2020_hyporheic_dat %>% 
-          select(c(comid,
-                   logRT_lateral_hz_s,
-                   logRT_vertical_hz_s,
-                   logq_hz_lateral_m_div_s,
-                   logq_hz_vertical_m_div_s)),
-        by = "comid",
-        all.x = TRUE)
-
+         D50_m = d50_m)
+  
 summary(rf_scaling_analyst_dat)
 
-write.csv(scaling_analysis_dat,paste(local_data,"rf_scaling_analysis_data.csv", sep = '/'),
+write.csv(rf_scaling_analyst_dat,paste(local_data,"rf_scaling_analysis_data.csv", sep = '/'),
           row.names = FALSE)
 
 ################################################################################
@@ -239,8 +234,8 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
   group_by(basin) %>% 
   mutate(ent_cat_w = factor(Hmisc::cut2(w_hrel, g = 8),labels = qlabel),
          ent_cat_c = factor(Hmisc::cut2(c_hrel, g = 8),labels = qlabel),
-         rst_cat = factor(Hmisc::cut2(t_rthz_s, g = 8),labels = qlabel),
-         hzt_cat = factor(Hmisc::cut2(t_qhz_ms, g = 8),labels = qlabel),
+         rst_cat = factor(Hmisc::cut2(tot_rt_hz_s, g = 8),labels = qlabel),
+         hzt_cat = factor(Hmisc::cut2(tot_q_hz_ms, g = 8),labels = qlabel),
          pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 8),labels = qlabel),
          rnf_cat = factor(Hmisc::cut2(mean_ann_runf_mm, g = 8),labels = qlabel),
          sto_fct = as.factor(stream_order),
