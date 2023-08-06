@@ -115,9 +115,6 @@ ctch_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Sc
                                    show_col_types = FALSE)  
 wshd_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_landscape_heterogeneity/data/watershed_landscape_heterogeneity_pnw.csv",
                                    show_col_types = FALSE)
-current_2020_hyporheic_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/raw_data/rcm_2022_hyporheic_provisional/data/current20_hyporheic_pnw_data.csv",
-                                       show_col_types = FALSE)
-
 
 local_data <- "./data"
 
