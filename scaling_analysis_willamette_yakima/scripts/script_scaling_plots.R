@@ -116,6 +116,8 @@ ctch_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Sc
 wshd_heterogeneity_dat <- read_csv("https://media.githubusercontent.com/media/Scaling-Watershed-Function/1-swf-knowledge.base/main/datasets/processed_data/river_corridor_landscape_heterogeneity/data/watershed_landscape_heterogeneity_pnw.csv",
                                    show_col_types = FALSE)
 
+
+
 local_data <- "./data"
 
 results <- "./results"
@@ -264,7 +266,7 @@ write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data
 
 local_rates_plot <- ggplot(data = scaling_analysis_dat,
                            aes(x = as.factor(stream_order),
-                               y = t_co2g_day/theor_stream_area_m2,
+                               y = totco2g_day/stream_area_m2,
                                color = sto_fct))+
   xlab(expression(bold("Stream order (Strahler)")))+
   ylab(expression(bold(paste("Local respiration rates"," ","(",gCO[2]*m^-2*d^-1,")"))))+
@@ -287,16 +289,19 @@ dev.off()
 
 local_rates_runf_plot <- ggplot(data = scaling_analysis_dat,
                                 aes(x = wshd_area_km2,
-                                    y = t_co2g_day/theor_stream_area_m2,
+                                    y = totco2g_day/stream_area_m2,
                                     color = rnf_cat))+
   geom_point()+
   scale_x_log10()+
   scale_y_log10()+
   xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
   ylab(expression(bold(paste("Local respiration rates"," ","(",gCO[2]*m^-2*d^-1,")"))))+
-  scale_color_manual(values = my_dcolors, name = "Mean annual runoff (mm) (quantiles)") +
+  scale_color_manual(values = my_dcolors, name = "Mean annual \nrunoff (mm) \n(quantiles)") +
   facet_wrap(~basin, ncol = 2)+
-  theme(legend.position = "bottom")
+  theme_httn+
+  theme(legend.position = "right",
+        plot.title = element_text(size = 16),
+        strip.text = element_text(size = 16, face = "bold"))
 local_rates_runf_plot
 svglite::svglite(file = paste(results, paste0("guerrero_etal_23_scaling_local_respiration_rates_runoff.svg"),sep = '/'),
                  width = 20,
@@ -309,7 +314,7 @@ dev.off()
 
 raw_dat_plot <- ggplot(data = scaling_analysis_dat,
                      aes(x = wshd_area_km2,
-                         y = accm_t_co2g_day / wshd_area_km2,
+                         y = accm_totco2g_day / wshd_area_km2,
                          color = rst_cat)) +
   geom_point(size = 2.5, alpha = 0.35) +
   scale_x_log10()+
@@ -323,9 +328,13 @@ raw_dat_plot <- ggplot(data = scaling_analysis_dat,
   scale_color_manual(values = my_dcolors) +
   xlab(expression(bold(paste("Watershed Area"," ","(", km^2, ")")))) +
   ylab(expression(bold(paste(" Cumulative"," ", Respiration[Sed],"(", gCO[2] * network^-1 * d^-1, ")")))) +
-  guides(color = guide_legend(title = "Hyporheic residence \ntime (s) (quantiles)")) +
-  theme(legend.position = "bottom") +
-  facet_wrap(~basin, ncol = 2)
+  guides(color = guide_legend(title = "Hyporheic \nresidence time (s) \n(quantiles)")) +
+  facet_wrap(~basin, ncol = 2)+
+  theme_httn+
+  theme(legend.position = "right",
+        plot.title = element_text(size = 16),
+        strip.text = element_text(size = 16, face = "bold"))
+local_rates_runf_plot
 raw_dat_plot
 svglite::svglite(file = paste(results, paste0("guerrero_etal_23_scaling_cumulative_respiration_rates_residence_time.svg"),sep = '/'),
                  width = 20,
@@ -341,7 +350,7 @@ dev.off()
 # For easier visualization we plot data from a reduced dataset that excludes 
 # missing values for hyporheic variables
 
-scaling_plot_dat <- filter(scaling_analysis_dat, is.na(t_rthz_s)==FALSE)
+scaling_plot_dat <- filter(scaling_analysis_dat, is.na(tot_rt_hz_s)==FALSE)
 
 
 ################################################################################
@@ -352,7 +361,7 @@ generate_inset_plot <- function(data, basin, color_var, color_scale, legend_titl
   
   quant_i <- ggplot(data = plot_data,
                     aes(x = wshd_area_km2,
-                        y = accm_t_co2g_day / wshd_area_km2,
+                        y = accm_totco2g_day / wshd_area_km2,
                         color = .data[[color_var]])) +
     geom_smooth(method = "lm", fullrange = TRUE, alpha = 0.3) +
     scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
@@ -382,13 +391,13 @@ generate_plot <- function(data, basin, color_var, legend_title, color_scale, plo
     main_quant <- ggplot(data = data %>%
                            filter(basin == !!basin),
                          aes(x = wshd_area_km2,
-                             y = accm_t_co2g_day / wshd_area_km2,
+                             y = accm_totco2g_day / wshd_area_km2,
                              color = .data[[color_var]])) +
       geom_point(size = 2.5, alpha = 0.35) +
       geom_point(data = data %>%
                    filter(basin == !!basin, .data[[color_var]] == "Q80+"),
                  aes(x = wshd_area_km2,
-                     y = accm_t_co2g_day / wshd_area_km2),
+                     y = accm_totco2g_day / wshd_area_km2),
                  size = 2.5) +
       geom_abline(slope = 1, intercept = 3, linewidth = 2, linetype = "dashed") +
       scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
@@ -413,13 +422,13 @@ generate_plot <- function(data, basin, color_var, legend_title, color_scale, plo
     
     main_quant <- ggplot(data = plot_data,
                          aes(x = wshd_area_km2,
-                             y = accm_t_co2g_day / wshd_area_km2,
+                             y = accm_totco2g_day / wshd_area_km2,
                              color = .data[[color_var]])) +
       geom_point(size = 2.5, alpha = 0.35) +
       geom_point(data = plot_data %>%
                    filter(.data[[color_var]] == "Q80+"),
                  aes(x = wshd_area_km2,
-                     y = accm_t_co2g_day / wshd_area_km2),
+                     y = accm_totco2g_day / wshd_area_km2),
                  size = 2.5) +
       geom_abline(slope = 1, intercept = 3, linewidth = 2, linetype = "dashed") +
       scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
@@ -499,48 +508,57 @@ svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abb
 print(plot_quant)
 dev.off()
 
-#################################### Replace code below #######################
 # Willamette River Basin
 
 # Landscape entropy
 plot_basin_abbv <- "wrb"
-wlm_ent_quant <- generate_plot(data = scaling_plot_dat,
-                               basin = "willamette",
-                               color_var = "ent_cat_c",
-                               legend_title = "Landscape Entropy\n(quantiles)",
-                               color_scale = my_mcolors,
-                               plot_title = "Willamette River Basin",
-                               faceting = FALSE)
+plot_quant <- generate_plot(data = scaling_plot_dat,
+                            basin = "Willamette River",
+                            color_var = "ent_cat_w",
+                            legend_title = "Landscape Entropy\n(quantiles)",
+                            color_scale = my_mcolors,
+                            plot_title = "Willamette River Basin",
+                            faceting = TRUE)
 
-print(wlm_ent_quant)
-ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.png"),sep = '/'),
-       width = 12,
-       height = 12,
-       units = "in")
+print(plot_quant)
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.svg"),sep = '/'),
+                 width =12,
+                 height = 12,
+                 bg = "transparent")
+print(plot_quant)
+dev.off()
 
 # If faceting = TRUE
-ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_entropy.png"),sep = '/'),
-       width = 18,
-       height = 12,
-       units = "in")
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_entropy.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(plot_quant)
+dev.off()
 
-# Residence time
-wlm_rst_quant <- generate_plot(data = scaling_plot_dat,
-                               basin = "willamette",
-                               color_var = "rst_cat",
-                               legend_title = "Residence time (s)\n(quantiles)",
+
+# Mean annual runoff
+plot_quant <- generate_plot(data = scaling_plot_dat,
+                               basin = "Willamette River",
+                               color_var = "rnf_cat",
+                               legend_title = "Mean annual\nrunoff (mm)\n(quantiles)",
                                color_scale = my_dcolors,
                                plot_title = "Willamette River Basin",
-                               faceting = FALSE)
+                               faceting = TRUE)
 
-print(wlm_rst_quant)
-ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_res_time.png"),sep = '/'),
-       width = 12,
-       height = 12,
-       units = "in")
+print(plot_quant)
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.svg"),sep = '/'),
+                 width =12,
+                 height = 12,
+                 bg = "transparent")
+print(plot_quant)
+dev.off()
 
 # If faceting = TRUE
-ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_res_time.png"),sep = '/'),
-       width = 18,
-       height = 12,
-       units = "in")
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_entropy.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(plot_quant)
+dev.off()
+
