@@ -109,9 +109,12 @@ repository <- "2-swf-analytical.engine/main"
 folder_path <- "scaling_analysis_willamette_yakima/data"
 file_name <- "scaling_analysis_quantiles_data.csv"
 
-scaling_analysis_dat <- read_csv(paste(github_path,organization,repository,
-                                       folder_path,file_name,sep = '/'),
-                                 show_col_types = FALSE)
+scaling_analysis_dat <- read_csv(paste(github_path,
+                                       organization,
+                                       repository,
+                                       folder_path,
+                                       file_name,sep = '/'),
+                                       show_col_types = FALSE)
 ################################################################################
 # Data sub-setting for plots
 ################################################################################
@@ -119,7 +122,7 @@ scaling_analysis_dat <- read_csv(paste(github_path,organization,repository,
 # For easier visualization we plot data from a reduced dataset that excludes 
 # missing values for hyporheic variables
 
-scaling_plot_dat <- filter(scaling_analysis_dat, is.na(t_rthz_s)==FALSE)
+scaling_plot_dat <- filter(scaling_analysis_dat, is.na(tot_rt_hz_s)==FALSE)
 
 
 #########################################################################################
@@ -134,15 +137,11 @@ scaling_plot_dat <- filter(scaling_analysis_dat, is.na(t_rthz_s)==FALSE)
 # Humanscapes: human_scp = pasture + crops + developed_op + developed_lw + developed_md + developed_hg
 # Barrenscapes: barren_scp = barren
 
-new.labs <- c("HZt-Q10","HZt-Q20", "HZt-Q30","HZt-Q40","HZt-Q50",
-              "HZt-Q60","HZt-Q70","HZt-Q80+")
-names(new.labs) <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80+")
-new.labs <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80+")
 
 landuse_scaling_dat <- scaling_plot_dat %>% 
   select(wshd_area_km2,
          basin,
-         accm_t_co2g_day,
+         accm_totco2g_day,
          w_forest_scp,
          w_water_scp,
          w_barren_scp,
@@ -151,45 +150,61 @@ landuse_scaling_dat <- scaling_plot_dat %>%
          w_human_scp,
          ent_cat_w,
          w_hrel,
+         mean_ann_runf_mm,
          rst_cat,
-         hzt_cat) %>% 
+         hzt_cat,
+         rnf_cat) %>% 
   mutate(p_frst_t = w_forest_scp + w_water_scp,
-         # p_anth_t = c_human_scp + c_barren_scp + c_grass_scp,
          p_anth_t = w_human_scp,
+         p_grss_t = w_grass_scp,
          p_shrb_t = w_shrub_scp) %>% 
-  gather(c(14:16),key="use",value = "fraction") %>% 
-  mutate(use = fct_relevel(use,c("p_frst_t","p_shrb_t","p_anth_t"))) %>% 
+  gather(c(16:19),key="use",value = "fraction") %>% 
+  mutate(use = fct_relevel(use,c("p_frst_t","p_shrb_t","p_grss_t","p_anth_t"))) %>% 
   arrange(use) 
 
 # Creating the plot
+
+new.labs <- c("10th-Percentile",
+              "20th-Percentile",
+              "30th-Percentile",
+              "40th-Percentile",
+              "50th-Percentile",
+              "60th-Percentile",
+              "70th-Percentile",
+              "80th+-Percentile")
+
+names(new.labs) <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80+")
 
 generate_lnd_plot <- function(data,basin,wrap_cat_var,plot_title){
   ggplot_obj <- ggplot(data = data %>% 
                    filter(basin == !!basin),
                  aes(x = wshd_area_km2,
-                     y = accm_t_co2g_day/wshd_area_km2,
+                     y = accm_totco2g_day/wshd_area_km2,
                      color = use))+
     facet_wrap(as.formula(paste("~", wrap_cat_var)), nrow = 2, labeller = labeller(!!wrap_cat_var := new.labs)) +
     geom_abline(slope=1.0, color = "red", linetype = "solid", linewidth  = 0.75)+
     geom_smooth(aes(x = wshd_area_km2,
-                    y = accm_t_co2g_day/wshd_area_km2),method = "lm", inherit.aes = FALSE,
+                    y = accm_totco2g_day/wshd_area_km2),method = "lm", inherit.aes = FALSE,
                 fullrange = TRUE, color = "black", size = 0.65, se = TRUE, fill = "gray",
                 alpha = 0.7)+
     geom_point(aes(alpha = fraction),size = 2.5)+
+    scale_alpha_continuous(guide = "none") + 
     scale_x_log10(breaks = breaks_c, 
                   labels = trans_format("log10", math_format(10^.x)))+
     scale_y_log10(breaks = breaks_c, 
                   labels = trans_format("log10", math_format(10^.x)))+
     xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
     ylab(expression(bold(paste("Cumulative total respiration"," ","(",gCO[2]*km^-2*d^-1,")"))))+
-    scale_color_manual(values = c("#008837","#dfc27d","#7b3294"))+
+    scale_color_manual(name = "Land use",
+                       values = c("#008837","#FFC618","darkorange","#7b3294"),
+                       labels = c("Forestscapes", "Shrublandscapes","Grasslandscapes","Humanscapes"))+
     annotation_logticks(size = 0.75, sides = "tblr")+
     theme_httn+
-    theme(legend.position = "none",
+    theme(legend.position = "right",
           legend.text = element_text(size=12),
           legend.title = element_text(size=16),
           plot.title = element_text(size = 16),
-          strip.text = element_text(size = 16, face = "bold"))+
+          strip.text = element_text(size = 16, face = "bold", hjust = 0))+
     ggtitle(plot_title)
   
   return(ggplot_obj)
@@ -198,21 +213,55 @@ generate_lnd_plot <- function(data,basin,wrap_cat_var,plot_title){
 
 
 # Generate the plot using the function
-
-# Hyporheic residence time and land use
-
-# Yakima River Basin
 plot_basin_abbv <- "wrb"
-land_hzt_quant <- generate_lnd_plot(data = landuse_scaling_dat,
-                                    basin = "willamette",
+land_quant <- generate_lnd_plot(data = landuse_scaling_dat,
+                                    basin = "Willamette River",
                                     wrap_cat_var = "ent_cat_w",
                                     plot_title = "Willamette River Basin")
 
+print(land_quant)
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_landuse_entropy.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(land_quant)
+dev.off()
+
+
+
+
+# Entropy plots
+
+generate_ent_plot <- function(data,basin,wrap_cat_var,plot_title){
+  ggplot_obj <- ggplot(data = data %>% 
+                         filter(basin == !!basin & fraction > 0.01),
+                       aes(x = w_human_scp,
+                           y = w_hrel,
+                           color = use))+
+    geom_point(aes(alpha = fraction),size = 2.5)+
+    scale_alpha_continuous(range = c(0.1, 1.00), breaks = c(0, .25, .50, .75, 1.00))+
+    # scale_x_log10(breaks = breaks_c,
+    #               labels = trans_format("log10", math_format(10^.x)))+
+    scale_x_log10(labels = label_comma())+
+    xlab("Humanscapes (%)")+
+    ylab("Landscape Heterogeneity \n(Shannon's entropy*")+
+    scale_color_manual(values = c("#008837","#dfc27d","darkorange","#7b3294"))+
+    theme_httn+
+    theme(legend.position = "right",
+          legend.text = element_text(size=12),
+          legend.title = element_text(size=16))+
+    ggtitle(plot_title)
+  
+  return(ggplot_obj)
+  
+}
+
+
+# Yakima River Basin
+plot_basin_abbv <- "wrb"
+land_hzt_quant <- generate_ent_plot(data = landuse_scaling_dat,
+                                    basin = "Yakima River",
+                                    wrap_cat_var = "ent_cat_w",
+                                    plot_title = "Yakima River Basin")
+
 print(land_hzt_quant)
-ggsave(file=paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_landuse_entropy.png"),sep = '/'),
-       width = 18,
-       height = 12,
-       units = "in")
-
-summary(scaling_analysis_dat %>% filter(basin == "willamette"))
-

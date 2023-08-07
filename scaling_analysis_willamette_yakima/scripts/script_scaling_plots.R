@@ -85,26 +85,14 @@ names(nlcd_colors_w) <- nlcd_cat_w
 # Creating a quasi-sequential color palette for discrete categories
 # Source: https://www.ibm.com/design/language/color/
 
-my_dcolors <- c("#a6c8ff",
-                "#78a9ff",
-                "#4589ff",
-                "#0f62fe",
-                "#00539a",
-                "#003a6d",
-                "#012749",
-                "#061727")
+my_dcolors <- c("#a6c8ff","#78a9ff","#4589ff","#0f62fe",
+                "#00539a","#003a6d","#012749","#061727")
 
 my_rcolors <- c("#fff1f1","#ffd7d9","#ffb3b8","#fa4d56",
                 "#da1e28","#a2191f","#750e13","#2d0709")
 
-my_mcolors <- c("#ffd6e8",
-                "#ffafd2",
-                "#ff7eb6",
-                "#ee5396",
-                "#d62670",
-                "#9f1853",
-                "#740937",
-                "#510224")
+my_mcolors <- c("#ffd6e8","#ffafd2","#ff7eb6","#ee5396",
+                "#d62670","#9f1853","#740937","#510224")
 
 
 #Data:
@@ -212,8 +200,8 @@ rf_scaling_analyst_dat <- scaling_analysis_dat %>%
   
 summary(rf_scaling_analyst_dat)
 
-write.csv(rf_scaling_analyst_dat,paste(local_data,"rf_scaling_analysis_data.csv", sep = '/'),
-          row.names = FALSE)
+# write.csv(rf_scaling_analyst_dat,paste(local_data,"rf_scaling_analysis_data.csv", sep = '/'),
+#          row.names = FALSE)
 
 ################################################################################
 # Calculating Quantiles
@@ -242,8 +230,8 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
                          "Yakima River",
                          "Willamette River"))
 
-write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data.csv", sep = '/'),
-          row.names = FALSE)
+# write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data.csv", sep = '/'),
+#          row.names = FALSE)
 
 ################################################################################
 # Raw plots
@@ -463,7 +451,7 @@ plot_quant <- generate_plot(data = scaling_plot_dat,
                                legend_title = "Landscape Entropy\n(quantiles)",
                                color_scale = my_mcolors,
                                plot_title = "Yakima River Basin",
-                               faceting = TRUE)
+                               faceting = FALSE)
 
 print(plot_quant)
 # Save the plot as an SVG file
@@ -518,7 +506,7 @@ plot_quant <- generate_plot(data = scaling_plot_dat,
                             legend_title = "Landscape Entropy\n(quantiles)",
                             color_scale = my_mcolors,
                             plot_title = "Willamette River Basin",
-                            faceting = TRUE)
+                            faceting = FALSE)
 
 print(plot_quant)
 svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.svg"),sep = '/'),
@@ -544,10 +532,10 @@ plot_quant <- generate_plot(data = scaling_plot_dat,
                                legend_title = "Mean annual\nrunoff (mm)\n(quantiles)",
                                color_scale = my_dcolors,
                                plot_title = "Willamette River Basin",
-                               faceting = TRUE)
+                               faceting = FALSE)
 
 print(plot_quant)
-svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.svg"),sep = '/'),
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_mean_runoff_entropy.svg"),sep = '/'),
                  width =12,
                  height = 12,
                  bg = "transparent")
@@ -555,7 +543,7 @@ print(plot_quant)
 dev.off()
 
 # If faceting = TRUE
-svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_respiration_entropy.svg"),sep = '/'),
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_facet_scaling_mean_runoff_entropy.svg"),sep = '/'),
                  width = 20,
                  height = 12,
                  bg = "transparent")
