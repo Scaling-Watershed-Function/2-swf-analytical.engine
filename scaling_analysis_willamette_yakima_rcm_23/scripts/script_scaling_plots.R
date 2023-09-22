@@ -132,7 +132,8 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
          sto_fct = as.factor(stream_order),
          forest_scp_3 = w_forest_scp + w_water_scp,
          humans_scp_3 = w_human_scp,
-         shrubl_scp_3 = w_shrub_scp + w_grass_scp + w_barren_scp) %>% 
+         shrubl_scp_3 = w_shrub_scp + w_grass_scp + w_barren_scp,
+         ht_3 = entropy()) %>% 
   ungroup() %>% 
   mutate(basin_cat = as.factor(if_else(basin == "yakima",
                                        "Yakima River (dryer)",
@@ -304,6 +305,130 @@ svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_anb_r
 print(cumulative_anb_res_hex)
 dev.off()
 
+
+# Cumulative aerobic and landscape entropy
+
+################################################################################
+# WATERSHED SCALING PLOTS
+################################################################################
+generate_inset_plot <- function(data, basin, color_var, color_scale, legend_title) {
+  plot_data <- filter(data, basin == !!basin)
+  
+  quant_i <- ggplot(data = plot_data,
+                    aes(x = wshd_area_km2,
+                        y = accm_totco2g_day / wshd_area_km2,
+                        color = .data[[color_var]])) +
+    geom_smooth(method = "lm", fullrange = TRUE, alpha = 0.3) +
+    scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
+    scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
+    xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")")))) +
+    ylab(expression(bold(paste("Sediment respiration"," ","(", gCO[2]*m^-2*d^-1, ")")))) +
+    annotation_logticks(size = 0.75, sides = "tblr") +
+    scale_color_manual(values = color_scale) +
+    geom_abline(slope = 1, intercept = 2.5, linewidth = 2, linetype = "dashed") +
+    guides(color = guide_legend(title = legend_title)) +
+    theme_httn +
+    theme(legend.position = "none",
+          axis.title = element_blank(),
+          axis.text = element_blank(),
+          plot.title = element_text(size = 16),
+          panel.background = element_blank()) +
+    guides(alpha = "none")
+  
+  # Convert quant_i ggplot into grob
+  quant_grob <- ggplotGrob(quant_i)
+  
+  return(quant_grob)
+}
+
+generate_plot <- function(data, basin, color_var, legend_title, color_scale, plot_title, faceting = FALSE) {
+  if (faceting) {
+    main_quant <- ggplot(data = data %>%
+                           filter(basin == !!basin),
+                         aes(x = wshd_area_km2,
+                             y = accm_totco2g_day / wshd_area_km2,
+                             color = .data[[color_var]])) +
+      geom_point(size = 2.5, alpha = 0.35) +
+      geom_point(data = data %>%
+                   filter(basin == !!basin, .data[[color_var]] == "Q80+"),
+                 aes(x = wshd_area_km2,
+                     y = accm_totco2g_day / wshd_area_km2),
+                 size = 2.5) +
+      geom_abline(slope = 1, intercept = 3, linewidth = 2, linetype = "dashed") +
+      scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
+      scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
+      scale_color_manual(values = color_scale) +
+      xlab(expression(bold(paste("Watershed Area"," ","(", km^2, ")")))) +
+      ylab(expression(bold(paste(" Cumulative"," ", Respiration[Sed],"(", gCO[2] * network^-1 * d^-1, ")")))) +
+      guides(color = guide_legend(title = legend_title)) +
+      annotation_logticks(size = 0.75, sides = "tblr") +
+      theme_httn +
+      theme(legend.position = "right",
+            legend.text = element_text(size = 16),
+            legend.title = element_text(size = 18),
+            plot.title = element_text(size = 16),
+            strip.text = element_text(size = 18, face = "bold")) +
+      ggtitle(plot_title) +
+      facet_wrap(as.formula(paste("~", color_var)), ncol = 4)  # Faceting based on color_var (rst_cat)
+  } else {
+    quant_ins <- generate_inset_plot(data, basin, color_var, color_scale, legend_title)
+    
+    plot_data <- filter(data, basin == !!basin)
+    
+    main_quant <- ggplot(data = plot_data,
+                         aes(x = wshd_area_km2,
+                             y = accm_totco2g_day / wshd_area_km2,
+                             color = .data[[color_var]])) +
+      geom_point(size = 2.5, alpha = 0.35) +
+      geom_point(data = plot_data %>%
+                   filter(.data[[color_var]] == "Q80+"),
+                 aes(x = wshd_area_km2,
+                     y = accm_totco2g_day / wshd_area_km2),
+                 size = 2.5) +
+      geom_abline(slope = 1, intercept = 3, linewidth = 2, linetype = "dashed") +
+      scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
+      scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
+      scale_color_manual(values = color_scale) +
+      xlab(expression(bold(paste("Watershed Area"," ","(", km^2, ")")))) +
+      ylab(expression(bold(paste(" Cumulative"," ", Respiration[Sed],"(", gCO[2] * network^-1 * d^-1, ")")))) +
+      guides(color = guide_legend(title = legend_title)) +
+      annotation_logticks(size = 0.75, sides = "tblr") +
+      annotation_custom(grob = quant_ins, xmin = 2.25, xmax = 4.35, ymin = -1.25, ymax = 2) +
+      theme_httn +
+      theme(legend.position = c(0.15, 0.75),
+            legend.text = element_text(size = 16),
+            legend.title = element_text(size = 18),
+            plot.title = element_text(size = 16),
+            strip.text = element_text(size = 18, face = "bold")) +
+      ggtitle(plot_title)
+  }
+  
+  return(main_quant)
+}
+################################################################################
+# Landscape entropy, residence time, hyporheic exchange, mean annual runoff, and scaling
+
+# Yakima River Basin
+
+# Landscape entropy
+plot_basin_abbv <- "yrb"
+plot_quant <- generate_plot(data = scaling_analysis_dat,
+                            basin = "Yakima River",
+                            color_var = "ent_cat_w",
+                            legend_title = "Landscape Entropy\n(quantiles)",
+                            color_scale = my_mcolors,
+                            plot_title = "Yakima River Basin (dryer)",
+                            faceting = FALSE)
+
+print(plot_quant)
+# Save the plot as an SVG file
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abbv,"_scaling_respiration_entropy.svg"),sep = '/'),
+                 width =12,
+                 height = 12,
+                 bg = "transparent")
+print(plot_quant)
+dev.off()
+
 # Cumulative respiration and landscape structure
 
 landuse_scaling_dat <- scaling_analysis_dat %>% 
@@ -334,8 +459,11 @@ generate_lnd_plot <- function(data, accm_var) {
                   labels = scales::trans_format("log10", scales::math_format(10^.x)))+
     xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
     ylab(expression(bold(paste("Cumulative total respiration"," ","(",gCO[2]*km^-2*d^-1,")"))))+
+    # scale_color_manual(name = "Land use",
+    #                    values = c("#008837", "#FFC618", "#7b3294"),
+    #                    labels = c("Forestscapes", "Shrublandscapes", "Humanscapes")) +
     scale_color_manual(name = "Land use",
-                       values = c("#008837", "#FFC618", "#7b3294"),
+                       values = c("#008837","#FFC618","#7b3294"),
                        labels = c("Forestscapes", "Shrublandscapes", "Humanscapes")) +
     annotation_logticks(size = 0.75, sides = "tblr") +
     theme_httn +
@@ -351,9 +479,22 @@ generate_lnd_plot <- function(data, accm_var) {
 land_ab_resp <- generate_lnd_plot(data = landuse_scaling_dat,
                                   accm_var = "accm_totco2_o2g_day")
 land_ab_resp
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_ab_respiration_land.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(land_ab_resp)
+dev.off()
 
-
-
+land_anb_resp <- generate_lnd_plot(data = landuse_scaling_dat,
+                                  accm_var = "accm_totco2_ang_day")
+land_anb_resp
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_anb_respiration_land.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(land_anb_resp)
+dev.off()
 
 
 
