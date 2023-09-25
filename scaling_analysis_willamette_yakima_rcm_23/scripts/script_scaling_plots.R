@@ -27,6 +27,8 @@ librarian::shelf(tidyverse,# for plotting
                  rgl,# required by plot3Drgl
                  entropy,#Information theory calculations
                  GGally,#pair plots
+                 ggExtra,#adding marginal distributions (does not work with facet_wrap)
+                 ggdist,# potentially working with facet_wrap
                  scales,# manipulating log scales
                  stringr,# editing text
                  Hmisc,# Harrell's miscellaneaous for stats
@@ -101,6 +103,8 @@ local_data <- "./data"
 
 results <- "./results"
 
+results_png <- "/Users/guerrero-fj/Library/Mobile Documents/com~apple~CloudDocs/scaling_watershed_function/analytical_engine/scaling_analysis_willamette_yakima_23/results"
+
 scaling_analysis_dat <- read_csv(paste(local_data,"rcm_23_model_data.csv",sep = '/'),
                                  show_col_types = FALSE)
 
@@ -132,8 +136,7 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
          sto_fct = as.factor(stream_order),
          forest_scp_3 = w_forest_scp + w_water_scp,
          humans_scp_3 = w_human_scp,
-         shrubl_scp_3 = w_shrub_scp + w_grass_scp + w_barren_scp,
-         ht_3 = entropy()) %>% 
+         shrubl_scp_3 = w_shrub_scp + w_grass_scp + w_barren_scp) %>% 
   ungroup() %>% 
   mutate(basin_cat = as.factor(if_else(basin == "yakima",
                                        "Yakima River (dryer)",
@@ -181,6 +184,11 @@ svglite::svglite(file = paste(results, paste0("guerrero_etal_23_scaling_local_re
                  bg = "transparent")
 print(local_rates_plot)
 dev.off()
+ggsave(paste(results_png, paste0("guerrero_etal_23_scaling_local_respiration_rates.png"),sep = '/'),
+       width = 20,
+       height = 12,
+       units = "in")
+
 
 
 ################################################################################
@@ -192,28 +200,34 @@ dev.off()
 cumulative_hex <- ggplot(data = scaling_analysis_dat,
             aes(x = wshd_area_km2,
                 y = accm_water_exchng_kg_day/wshd_area_km2,
-                color = log(water_exchng_kg_day)))+
-  geom_point(alpha = 0.5)+
+                color = log(mean_ann_runf_mm,10)))+
+  geom_point(alpha = 0.5, size = 2.5)+
   scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
   xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")")))) +
   ylab(expression(bold(paste("Cumulative hyporheic exchange"," ","(", kg/day.km^2, ")")))) +
   annotation_logticks(size = 0.75, sides = "tblr") +
   geom_abline(slope = 1, intercept = 4.5, linewidth = 2, linetype = "dashed") +
-  guides(color = guide_legend(title = "Local hyporheic\nexchange kg/day\n[log]")) +
+  scale_color_continuous(name = "[Log] Mean annual\nrunoff (mm)")+
+  guides(color = guide_colourbar(barheight = 6))+
   facet_wrap(~basin_cat, ncol = 2)+
   theme_httn+
   theme(legend.position = c(0.925, 0.15),
-        legend.text = element_text(size = 16),
-        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20),
         plot.title = element_text(size = 16),
-        strip.text = element_text(size = 18, face = "bold"))
+        strip.text = element_text(size = 22, face = "bold"))
+cumulative_hex
 svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_hyporheic_exchange.svg"),sep = '/'),
                  width = 20,
                  height = 12,
                  bg = "transparent")
 print(cumulative_hex)
 dev.off()
+ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_hyporheic_exchange.png"),sep = '/'),
+       width = 20,
+       height = 12,
+       units = "in")
 
 
 # Cumulative residence time
@@ -221,30 +235,34 @@ dev.off()
 cumulative_res <- ggplot(data = scaling_analysis_dat,
                          aes(x = wshd_area_km2,
                              y = accm_tot_rt_hz_s,
-                             color = log(tot_rt_hz_s)))+
-  geom_smooth(color="darkred")+
-  geom_point(alpha = 0.5)+
+                             color = sto_fct))+
+  geom_point(alpha = 0.5, size = 2.5)+
+  geom_smooth(color="black",method = 'lm')+
   scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
   xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")")))) +
   ylab(expression(bold(paste("Cumulative residence time (s)")))) +
   annotation_logticks(size = 0.75, sides = "tblr") +
   geom_abline(slope = 1, intercept = 4.5, linewidth = 2, linetype = "dashed") +
-  guides(color = guide_legend(title = "Local res. time (s) [log]")) +
+  scale_color_discrete(name = "Stream \norder")+
   facet_wrap(~basin_cat, ncol = 2)+
   theme_httn+
   theme(legend.position = c(0.925, 0.15),
-        legend.text = element_text(size = 16),
-        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20),
         plot.title = element_text(size = 16),
-        strip.text = element_text(size = 18, face = "bold"))
+        strip.text = element_text(size = 22, face = "bold"))
+cumulative_res
 svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_residence_time.svg"),sep = '/'),
                  width = 20,
                  height = 12,
                  bg = "transparent")
 print(cumulative_res)
 dev.off()
-
+ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_residence_time.png"),sep = '/'),
+       width = 20,
+       height = 12,
+       units = "in")
 
 # Cumulative aerobic respiration and hyporheic exchange
 
@@ -252,28 +270,32 @@ cumulative_ab_res_hex <- ggplot(data = scaling_analysis_dat,
                          aes(x = accm_water_exchng_kg_day,
                              y = accm_totco2_o2g_day,
                              color = sto_fct))+
-  geom_smooth(color="darkred")+
-  geom_point(alpha = 0.5)+
+  geom_point(alpha = 0.5, size = 2.5)+
   scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
   xlab(expression(bold(paste("Cumulative hyporheic exchange"," ","(", kg * d^-1, ")")))) +
-  ylab(expression(bold(paste(" Cumulative aerobic"," ", Respiration[Hyp],"(", gCO[2] * d^-1, ")")))) +
+  ylab(expression(bold(paste(" Cumulative aerobic"," ", respiration[Hyp],"(", gCO[2] * d^-1, ")")))) +
   annotation_logticks(size = 0.75, sides = "tblr") +
-  geom_abline(slope = 1, linewidth = 2, linetype = "dashed") +
-  guides(color = guide_legend(title = "Stream order\nStrahler")) +
+  geom_abline(slope = 1, linewidth = 2, linetype = "dashed", intercept = -3.25) +
+  scale_color_discrete(name = "Stream \norder")+
   facet_wrap(~basin_cat, ncol = 2)+
   theme_httn+
   theme(legend.position = c(0.925, 0.15),
-        legend.text = element_text(size = 16),
-        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20),
         plot.title = element_text(size = 16),
-        strip.text = element_text(size = 18, face = "bold"))
+        strip.text = element_text(size = 22, face = "bold"))
+cumulative_ab_res_hex
 svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_ab_resp_hex.svg"),sep = '/'),
                  width = 20,
                  height = 12,
                  bg = "transparent")
 print(cumulative_ab_res_hex)
 dev.off()
+ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_ab_resp_hex.png"),sep = '/'),
+       width = 20,
+       height = 12,
+       units = "in")
 
 
 # Cumulative anaerobic respiration and hyporheic exchange
@@ -282,28 +304,236 @@ cumulative_anb_res_hex <- ggplot(data = scaling_analysis_dat,
                                 aes(x = accm_water_exchng_kg_day,
                                     y = accm_totco2_ang_day,
                                     color = sto_fct))+
-  geom_smooth(color="darkred")+
-  geom_point(alpha = 0.5)+
+  geom_point(alpha = 0.5, size = 2.5)+
+  geom_smooth(color="black", method = 'lm')+
   scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
   xlab(expression(bold(paste("Cumulative hyporheic exchange"," ","(", kg * d^-1, ")")))) +
-  ylab(expression(bold(paste(" Cumulative anaerobic"," ", Respiration[Hyp],"(", gCO[2] * d^-1, ")")))) +
+  ylab(expression(bold(paste(" Cumulative anaerobic"," ", respiration[Hyp],"(", gCO[2] * d^-1, ")")))) +
   annotation_logticks(size = 0.75, sides = "tblr") +
-  geom_abline(slope = 1, linewidth = 2, linetype = "dashed") +
-  guides(color = guide_legend(title = "Stream order\nStrahler")) +
+  geom_abline(slope = 1, linewidth = 2, linetype = "dashed", intercept = -5) +
+  scale_color_discrete(name = "Stream \norder")+
   facet_wrap(~basin_cat, ncol = 2)+
   theme_httn+
   theme(legend.position = c(0.925, 0.15),
-        legend.text = element_text(size = 16),
-        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20),
         plot.title = element_text(size = 16),
-        strip.text = element_text(size = 18, face = "bold"))
+        strip.text = element_text(size = 22, face = "bold"))
+cumulative_anb_res_hex
 svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_anb_respiration_hex.svg"),sep = '/'),
                  width = 20,
                  height = 12,
                  bg = "transparent")
 print(cumulative_anb_res_hex)
 dev.off()
+ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_anb_respiration_hex.png"),sep = '/'),
+       width = 20,
+       height = 12,
+       units = "in")
+
+###############################################################################
+# Cumulative respiration and landscape structure
+################################################################################
+landuse_scaling_dat <- scaling_analysis_dat %>% 
+  select(wshd_area_km2,
+         basin_cat,
+         sto_fct,
+         hzt_cat,
+         w_ht,
+         accm_water_exchng_kg_day,
+         accm_totco2_o2g_day,
+         accm_totco2_ang_day,
+         forest_scp_3,
+         humans_scp_3,
+         shrubl_scp_3) %>% 
+  gather(c(9:11),key="use",value = "fraction") %>% 
+  mutate(use = fct_relevel(use,c("forest_scp_3","shrubl_scp_3","humans_scp_3"))) %>% 
+  arrange(use) 
+
+#Plotting function
+generate_lnd_plot <- function(data, accm_var, ylab_expression, wrap_col) {
+  ggplot_obj <- ggplot(data = data,
+                       aes(x = wshd_area_km2,
+                           y = !!sym(accm_var) / wshd_area_km2,
+                           color = use)) +
+    facet_wrap(~basin_cat, ncol = wrap_col) +
+    geom_abline(slope = 1.0, color = "red", linetype = "solid", linewidth = 0.75) +
+    geom_point(aes(alpha = fraction), size = 2.5) +
+    scale_alpha_continuous(guide = "none") + 
+    scale_x_log10(breaks = breaks_c, 
+                  labels = scales::trans_format("log10", scales::math_format(10^.x)))+
+    scale_y_log10(breaks = breaks_c, 
+                  labels = scales::trans_format("log10", scales::math_format(10^.x)))+
+    xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
+    ylab(ylab_expression) +  # Use the provided ylab expression
+    scale_color_manual(name = "Land use",
+                       values = c("#008837", "#FFC618", "#7b3294"),
+                       labels = c("Forestscapes", "Shrublandscapes", "Humanscapes")) +
+    annotation_logticks(size = 0.75, sides = "tblr") +
+    theme_httn +
+    theme(legend.position = c(0.925, 0.15),
+          legend.text = element_text(size = 18),
+          legend.title = element_text(size = 20),
+          plot.title = element_text(size = 16),
+          strip.text = element_text(size = 22, face = "bold"))
+  
+  return(ggplot_obj)
+}
+
+# Cummulative hyporheic exchange
+ylab_expression <-expression(bold(paste("Cumulative hyporheic exchange"," ","(", kg * d^-1 * km^-2, ")")))
+
+land_hex <- generate_lnd_plot(data = landuse_scaling_dat,
+                                  accm_var = "accm_water_exchng_kg_day",
+                                  ylab_expression = ylab_expression,
+                                  wrap_col = 1)
+land_hex
+ggsave(paste(results_png,"guerrero_etal_cumulative_exchange_land_vert.png", sep = '/'),
+       width = 12,
+       height = 21.5,
+       units = "in")
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_exchange_land_vert.svg"),sep = '/'),
+                 width = 12,
+                 height = 21.5,
+                 bg = "transparent")
+print(land_hex)
+dev.off()
+
+
+# Cummulative aerobic respiration
+ylab_expression <-expression(bold(paste(" Cumulative aerobic"," ", respiration[Hyp],"(", gCO[2] * d^-1 * km^-2, ")")))
+
+land_ab_resp <- generate_lnd_plot(data = landuse_scaling_dat,
+                                  accm_var = "accm_totco2_o2g_day",
+                                  ylab_expression = ylab_expression,
+                                  wrap_col = 1)
+land_ab_resp
+ggsave(paste(results_png,"guerrero_etal_cumulative_ab_respiration_land_vert.png", sep = '/'),
+       width = 12,
+       height = 21.5,
+       units = "in")
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_ab_respiration_land_vert.svg"),sep = '/'),
+                 width = 12,
+                 height = 21.5,
+                 bg = "transparent")
+print(land_ab_resp)
+dev.off()
+
+
+# Cummulative anaerobic respiration
+ylab_expression <-expression(bold(paste(" Cumulative anaerobic"," ", respiration[Hyp],"(", gCO[2] * d^-1 * km^-2, ")")))
+
+land_anb_resp <- generate_lnd_plot(data = landuse_scaling_dat,
+                                  accm_var = "accm_totco2_ang_day",
+                                  ylab_expression = ylab_expression,
+                                  wrap_col = 1)
+land_anb_resp
+ggsave(paste(results_png,"guerrero_etal_cumulative_anb_respiration_land_vert.png", sep = '/'),
+       width = 12,
+       height = 21.5,
+       units = "in")
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_anb_respiration_land_vert.svg"),sep = '/'),
+                 width = 12,
+                 height = 21.5,
+                 bg = "transparent")
+print(land_anb_resp)
+dev.off()
+
+
+# Faceting by HEX quantiles
+
+p <- ggplot(data = filter(landuse_scaling_dat, basin_cat == "Yakima River (dryer)"),
+            aes(x = wshd_area_km2,
+                y = accm_water_exchng_kg_day/wshd_area_km2,
+                color = use))+
+  geom_point(aes(alpha = fraction), size = 2.5)+
+  geom_smooth(color = "black", linewidth = 1.5, method = 'lm', linetype = "dashed")+
+  scale_x_log10()+
+  scale_y_log10()+
+  xlab(NULL)+
+  ylab(NULL)+
+  scale_color_manual(name = "Land use",
+                     values = c("#008837", "#FFC618", "#7b3294"),
+                     labels = c("Forestscapes", "Shrublandscapes", "Humanscapes"))+
+  geom_abline(linewidth = 0.5, linetype = "dotted", intercept = 3, color = "darkred")+
+  scale_alpha_continuous(guide = "none") +
+  theme(legend.position = c(0.925, 0.15),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20),
+        plot.title = element_text(size = 16),
+        strip.text = element_text(size = 22, face = "bold"))+
+  facet_wrap(~hzt_cat, nrow = 2)
+p
+ggsave(paste(results_png,"yakima_river_hex_faceted.png", sep = '/'),
+       width = 16,
+       height = 10,
+       units = "in")
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_willamette_river_hex_faceted.svg"),sep = '/'),
+                 width = 16,
+                 height = 10,
+                 bg = "transparent")
+print(p)
+dev.off()
+
+
+
+
+
+
+# Marginal plots test
+
+p <- ggplot(data = filter(landuse_scaling_dat, basin_cat == "Yakima River (dryer)"),
+            aes(x = wshd_area_km2,
+                y = accm_totco2_o2g_day/wshd_area_km2,
+                color = use))+
+  geom_point(aes(alpha = fraction), size = 2.5)+
+  scale_x_log10()+
+  scale_y_log10()+
+  scale_color_manual(name = "Land use",
+                     values = c("#008837", "#FFC618", "#7b3294"),
+                     labels = c("Forestscapes", "Shrublandscapes", "Humanscapes"))+
+  scale_alpha_continuous(guide = "none") +
+  theme(legend.position = c(0.925, 0.15),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20))
+p
+
+
+# Add marginal density plots along the y-axis filled by "use" with alpha 0.5
+p_with_marginals <- ggExtra::ggMarginal(p, 
+                                        margins = "y", 
+                                        type = "density", 
+                                        groupColour = TRUE,
+                                        groupFill = TRUE,
+                                        alpha = 0.5)
+
+# Print the plot
+print(p_with_marginals)
+
+# Note, does not produce the intended output which should be more akin to the
+# landscape heterogeneity
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Cumulative aerobic and landscape entropy
@@ -428,81 +658,4 @@ svglite::svglite(file = paste(results, paste0("guerrero_etal_23_",plot_basin_abb
                  bg = "transparent")
 print(plot_quant)
 dev.off()
-
-# Cumulative respiration and landscape structure
-
-landuse_scaling_dat <- scaling_analysis_dat %>% 
-  select(wshd_area_km2,
-         basin_cat,
-         accm_water_exchng_kg_day,
-         accm_totco2_o2g_day,
-         accm_totco2_ang_day,
-         forest_scp_3,
-         humans_scp_3,
-         shrubl_scp_3) %>% 
-  gather(c(6:8),key="use",value = "fraction") %>% 
-  mutate(use = fct_relevel(use,c("forest_scp_3","shrubl_scp_3","humans_scp_3"))) %>% 
-  arrange(use) 
-
-generate_lnd_plot <- function(data, accm_var) {
-  ggplot_obj <- ggplot(data = data,
-                       aes(x = wshd_area_km2,
-                           y = !!sym(accm_var) / wshd_area_km2,
-                           color = use)) +
-    facet_wrap(~basin_cat, ncol = 2) +
-    geom_abline(slope = 1.0, color = "red", linetype = "solid", size = 0.75) +
-    geom_point(aes(alpha = fraction), size = 2.5) +
-    scale_alpha_continuous(guide = "none") + 
-    scale_x_log10(breaks = breaks_c, 
-                  labels = scales::trans_format("log10", scales::math_format(10^.x)))+
-    scale_y_log10(breaks = breaks_c, 
-                  labels = scales::trans_format("log10", scales::math_format(10^.x)))+
-    xlab(expression(bold(paste("Watershed area"," ","(",km^2,")"))))+
-    ylab(expression(bold(paste("Cumulative total respiration"," ","(",gCO[2]*km^-2*d^-1,")"))))+
-    # scale_color_manual(name = "Land use",
-    #                    values = c("#008837", "#FFC618", "#7b3294"),
-    #                    labels = c("Forestscapes", "Shrublandscapes", "Humanscapes")) +
-    scale_color_manual(name = "Land use",
-                       values = c("#008837","#FFC618","#7b3294"),
-                       labels = c("Forestscapes", "Shrublandscapes", "Humanscapes")) +
-    annotation_logticks(size = 0.75, sides = "tblr") +
-    theme_httn +
-    theme(legend.position = "right",
-          legend.text = element_text(size = 12),
-          legend.title = element_text(size = 16),
-          plot.title = element_text(size = 16),
-          strip.text = element_text(size = 16, face = "bold", hjust = 0))
-  
-  return(ggplot_obj)
-}
-
-land_ab_resp <- generate_lnd_plot(data = landuse_scaling_dat,
-                                  accm_var = "accm_totco2_o2g_day")
-land_ab_resp
-svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_ab_respiration_land.svg"),sep = '/'),
-                 width = 20,
-                 height = 12,
-                 bg = "transparent")
-print(land_ab_resp)
-dev.off()
-
-land_anb_resp <- generate_lnd_plot(data = landuse_scaling_dat,
-                                  accm_var = "accm_totco2_ang_day")
-land_anb_resp
-svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_anb_respiration_land.svg"),sep = '/'),
-                 width = 20,
-                 height = 12,
-                 bg = "transparent")
-print(land_anb_resp)
-dev.off()
-
-
-
-
-
-
-
-
-
-
 
