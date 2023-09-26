@@ -230,7 +230,8 @@ ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_hyporheic_exchange
        units = "in")
 
 
-# Cumulative residence time
+# Cumulative residence time (not sure about the method to calculate it, perhaps 
+# it needs to be flux-weighted)
 
 cumulative_res <- ggplot(data = scaling_analysis_dat,
                          aes(x = wshd_area_km2,
@@ -331,6 +332,41 @@ ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_anb_respiration_he
        width = 20,
        height = 12,
        units = "in")
+
+
+# Scaling cumulative aerobic respiration and hyporheic exchange
+
+cumulative_ab_res_hex <- ggplot(data = scaling_analysis_dat,
+                                aes(x = accm_water_exchng_kg_day,
+                                    y = accm_totco2_o2g_day,
+                                    color = sto_fct))+
+  geom_point(alpha = 0.5, size = 2.5)+
+  scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
+  scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
+  xlab(expression(bold(paste("Cumulative hyporheic exchange"," ","(", kg * d^-1, ")")))) +
+  ylab(expression(bold(paste(" Cumulative aerobic"," ", respiration[Hyp],"(", gCO[2] * d^-1, ")")))) +
+  annotation_logticks(size = 0.75, sides = "tblr") +
+  geom_abline(slope = 1, linewidth = 2, linetype = "dashed", intercept = -3.25) +
+  scale_color_discrete(name = "Stream \norder")+
+  facet_wrap(~basin_cat, ncol = 2)+
+  theme_httn+
+  theme(legend.position = c(0.925, 0.15),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20),
+        plot.title = element_text(size = 16),
+        strip.text = element_text(size = 22, face = "bold"))
+cumulative_ab_res_hex
+svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_ab_resp_hex.svg"),sep = '/'),
+                 width = 20,
+                 height = 12,
+                 bg = "transparent")
+print(cumulative_ab_res_hex)
+dev.off()
+ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_ab_resp_hex.png"),sep = '/'),
+       width = 20,
+       height = 12,
+       units = "in")
+
 
 ###############################################################################
 # Cumulative respiration and landscape structure
