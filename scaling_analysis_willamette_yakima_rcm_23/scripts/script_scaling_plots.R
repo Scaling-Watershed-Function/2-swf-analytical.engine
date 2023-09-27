@@ -139,11 +139,20 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
          shrubl_scp_3 = w_shrub_scp + w_grass_scp + w_barren_scp) %>% 
   ungroup() %>% 
   mutate(basin_cat = as.factor(if_else(basin == "yakima",
-                                       "Yakima River (dryer)",
+                                       "Yakima River (drier)",
                                        "Willamette River (wetter)")))
 
 # write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_quantiles_data.csv", sep = '/'),
 #          row.names = FALSE)
+
+p <- ggplot(data = scaling_analysis_dat,
+            aes(x = reach_slope,
+                fill = basin_cat,
+                color = basin_cat))+
+  geom_density(alpha = 0.5)+
+  scale_x_log10()+
+  facet_wrap(~hzt_cat, ncol = 4)
+p
 
 ################################################################################
 # Raw plots
