@@ -125,6 +125,7 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
          pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 8),labels = qlabel),
          rnf_cat = factor(Hmisc::cut2(mean_ann_runf_mm, g = 8),labels = qlabel),
          d50_cat = factor(Hmisc::cut2(d50_m, g = 8),labels = qlabel),
+         accm_hzt_cat = factor(Hmisc::cut2(tot_q_hz_ms, g = 8),labels = qlabel),
          sto_fct = as.factor(stream_order),
          forest_scp_3 = w_forest_scp + w_water_scp,
          humans_scp_3 = w_human_scp,
@@ -148,7 +149,7 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
 cumulative_ab_resp_hex <- ggplot(data = scaling_analysis_dat,
             aes(x = wshd_area_km2,
                 y = accm_totco2_o2g_day/wshd_area_km2,
-                color = hzt_cat))+
+                color = accm_hzt_cat))+
   geom_point(alpha = 0.5, size = 2.5)+
   scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
@@ -156,7 +157,7 @@ cumulative_ab_resp_hex <- ggplot(data = scaling_analysis_dat,
   ylab(expression(bold(paste(" Cumulative aerobic"," ", respiration[Hyp],"(", gCO[2] * d^-1 * km^-2, ")")))) +
   annotation_logticks(size = 0.75, sides = "tblr") +
   geom_abline(slope = 1, intercept = 1.5, linewidth = 2, linetype = "dashed") +
-  scale_color_manual(name =expression(bold(paste("Hyporheic \nexchange \nquantiles"," ","(",m * s^-1,")"))),
+  scale_color_manual(name =expression(bold(paste("Cumulative \nHyporheic \nexchange \nquantiles"," ","(",m * s^-1,")"))),
                        values = my_dcolors)+
   facet_wrap(~basin_cat, ncol = 2)+
   theme_httn+
@@ -178,21 +179,21 @@ ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_ab_resp_hex.png"),
        units = "in")
 
 
+
 cumulative_ab_resp_hex_faceted <- ggplot(data = scaling_analysis_dat,
-                                 aes(x = wshd_area_km2,
-                                     y = accm_totco2_o2g_day/wshd_area_km2,
-                                     color = basin_cat))+
+                                         aes(x = wshd_area_km2,
+                                             y = accm_totco2_o2g_day/wshd_area_km2,
+                                             color = basin_cat))+
+  geom_abline(slope = 0.45, intercept = 4.25)+
   geom_point(alpha = 0.5, size = 0.5)+
-  geom_smooth(method = 'lm', linewidth = 1.5, fullrange = TRUE)+
   scale_x_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
   xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")")))) +
   ylab(expression(bold(paste(" Cumulative aerobic"," ", respiration[Hyp],"(", gCO[2] * d^-1 * km^-2, ")")))) +
   annotation_logticks(size = 0.75, sides = "bl") +
-  geom_abline(slope = 1, intercept = 1.5, linewidth = 2, linetype = "dashed") +
   scale_color_manual(name ="Basin",
                      values = c("#5e3c99","#e66101"))+
-  facet_wrap(basin_cat~hzt_cat,
+  facet_wrap(basin_cat~accm_hzt_cat,
              ncol = 8)+
   theme_httn+
   theme(legend.position = "none",
@@ -213,38 +214,6 @@ ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_ab_resp_hex_facete
        units = "in")
 
 
-
-ab_resp_hex_faceted <- ggplot(data = scaling_analysis_dat,
-                              aes(x = wshd_area_km2,
-                                  y = accm_totco2_o2g_day/wshd_area_km2,
-                                  color = ent_cat_w))+
-  geom_point(alpha = 0.5, size = 0.5)+
-  scale_x_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
-  scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
-  xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")")))) +
-  ylab(expression(bold(paste(" Aerobic"," ", respiration[Hyp],"(", gCO[2] * d^-1 * m^-2, ")")))) +
-  annotation_logticks(size = 0.75, sides = "bl") +
-  scale_color_manual(name ="Entropy",
-                     values = my_mcolors)+
-  facet_wrap(basin_cat~hzt_cat,
-             ncol = 8)+
-  theme_httn+
-  theme(legend.position = "none",
-        legend.text = element_text(size = 18),
-        legend.title = element_text(size = 20),
-        plot.title = element_text(size = 16),
-        strip.text = element_text(size = 10))
-ab_resp_hex_faceted
-svglite::svglite(file = paste(results, paste0("guerrero_etal_23_cumulative_ab_resp_hex_faceted_2.svg"),sep = '/'),
-                 width = 20,
-                 height = 10,
-                 bg = "transparent")
-print(ab_resp_hex_faceted)
-dev.off()
-ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_ab_resp_hex_faceted_2.png"),sep = '/'),
-       width = 20,
-       height = 10,
-       units = "in")
 
 
 
