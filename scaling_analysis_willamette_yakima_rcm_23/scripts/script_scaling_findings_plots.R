@@ -101,9 +101,9 @@ my_mcolors <- c("#ffd6e8","#ffafd2","#ff7eb6","#ee5396",
 
 local_data <- "./data"
 
-results <- "./results"
+findings <- "./findings"
 
-results_png <- "/Users/guerrero-fj/Library/Mobile Documents/com~apple~CloudDocs/scaling_watershed_function/analytical_engine/scaling_analysis_willamette_yakima_23/results"
+findings_png <- "/Users/guerrero-fj/Library/Mobile Documents/com~apple~CloudDocs/scaling_watershed_function/analytical_engine/scaling_analysis_willamette_yakima_23/findings"
 
 scaling_analysis_dat <- read_csv(paste(local_data,"rcm_23_model_data.csv",sep = '/'),
                                  show_col_types = FALSE)
@@ -133,6 +133,7 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
          hzt_cat = factor(Hmisc::cut2(tot_q_hz_ms, g = 8),labels = qlabel),
          pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 8),labels = qlabel),
          rnf_cat = factor(Hmisc::cut2(mean_ann_runf_mm, g = 8),labels = qlabel),
+         d50_cat = factor(Hmisc::cut2(d50_m, g = 8),labels = qlabel),
          sto_fct = as.factor(stream_order),
          forest_scp_3 = w_forest_scp + w_water_scp,
          humans_scp_3 = w_human_scp,
@@ -204,21 +205,21 @@ ggsave(paste(results_png, paste0("guerrero_etal_23_scaling_local_respiration_rat
 # WATERSHED SCALING PLOTS
 ################################################################################
 
-# Cumulative hyporheic exchange
+# Cumulative hyporheic exchange vs. watershed area
 
 cumulative_hex <- ggplot(data = scaling_analysis_dat,
             aes(x = wshd_area_km2,
                 y = accm_water_exchng_kg_day/wshd_area_km2,
-                color = log(mean_ann_runf_mm,10)))+
-  geom_point(alpha = 0.5, size = 2.5)+
+                color = rnf_cat))+
+  geom_point(alpha = 0.85, size = 2.5)+
   scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
   xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")")))) +
   ylab(expression(bold(paste("Cumulative hyporheic exchange"," ","(", kg/day.km^2, ")")))) +
   annotation_logticks(size = 0.75, sides = "tblr") +
   geom_abline(slope = 1, intercept = 4.5, linewidth = 2, linetype = "dashed") +
-  scale_color_continuous(name = "[Log] Mean annual\nrunoff (mm)")+
-  guides(color = guide_colourbar(barheight = 6))+
+  scale_color_manual(name = "Mean annual\nrunoff (mm)-quantiles",
+                       values = my_dcolors)+
   facet_wrap(~basin_cat, ncol = 2)+
   theme_httn+
   theme(legend.position = c(0.925, 0.15),
@@ -240,7 +241,7 @@ ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_hyporheic_exchange
 
 
 # Cumulative residence time (not sure about the method to calculate it, perhaps 
-# it needs to be flux-weighted)
+# it needs to be flux-weighted) vs. watershed area
 
 cumulative_res <- ggplot(data = scaling_analysis_dat,
                          aes(x = wshd_area_km2,
@@ -274,7 +275,7 @@ ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_residence_time.png
        height = 12,
        units = "in")
 
-# Cumulative aerobic respiration and hyporheic exchange
+# Cumulative aerobic respiration vs. cumulative hyporheic exchange
 
 cumulative_ab_res_hex <- ggplot(data = scaling_analysis_dat,
                          aes(x = accm_water_exchng_kg_day,
@@ -308,7 +309,7 @@ ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_ab_resp_hex.png"),
        units = "in")
 
 
-# Cumulative anaerobic respiration and hyporheic exchange
+# Cumulative anaerobic respiration vs cumulative hyporheic exchange
 
 cumulative_anb_res_hex <- ggplot(data = scaling_analysis_dat,
                                 aes(x = accm_water_exchng_kg_day,
@@ -346,9 +347,9 @@ ggsave(paste(results_png, paste0("guerrero_etal_23_cumulative_anb_respiration_he
 # Scaling cumulative aerobic respiration and hyporheic exchange
 
 cumulative_ab_res_hex <- ggplot(data = scaling_analysis_dat,
-                                aes(x = accm_water_exchng_kg_day,
+                                aes(x = wshd_area_km2,
                                     y = accm_totco2_o2g_day,
-                                    color = sto_fct))+
+                                    color = hzt_cat))+
   geom_point(alpha = 0.5, size = 2.5)+
   scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
