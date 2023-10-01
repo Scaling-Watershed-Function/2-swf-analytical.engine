@@ -1,0 +1,32 @@
+---
+title: "code_instructions"
+output: html_document
+date: "2023-09-30"
+---
+###############################################################################
+# Scaling Analysis for Respiration Rates across the Yakima and Willamette River Basins
+
+################################################################################
+# FIGURE: Cumulative aerobic respiration vs. watershed area (color-code: hyporheic exchange
+# quantiles)
+###############################################################################
+
+#By : Francisco Guerrero
+#Data source: RIVER CORRIDOR MODEL (By Kyongho Son and Yilin Fang). Slope and D50 
+# data were constrained by Downstream Hydraulic Geometry (DHG) and then used in a 
+# Random Forest Model to fill gaps in hyporheic hydraulics (lateral and vertical 
+# exchange fluxes and residence times). This new data were coupled with corresponding
+# substrate concentrations and fed into the RCM for prediction of both aerobic and
+# anaerobic respiration
+
+# SETTINGS
+# Loading packages:
+
+# Run for the first time only
+# install.packages(librarian)
+
+# To run this code in macos it is necessary to install XQuartz from 
+#www.xquartz.org
+
+# Also, you may need to install the GIT credential manager following the instructions
+# from: https://github.com/GitCredentialManager/git-credential-manager/blob/main/README.md
