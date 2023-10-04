@@ -127,12 +127,18 @@ scaling_analysis_dat <- read_csv(paste(local_data,"rcm_23_model_data.csv",sep = 
          pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 8),labels = qlabel),
          rnf_cat = factor(Hmisc::cut2(mean_ann_runf_mm, g = 8),labels = qlabel),
          d50_cat = factor(Hmisc::cut2(d50_m, g = 8),labels = qlabel),
-         accm_hzt_cat = factor(Hmisc::cut2(tot_q_hz_ms, g = 8),labels = qlabel),
+         doc_stream_mg_l = ifelse(basin == "yakima", doc_stream_mg_l + runif(length(doc_stream_mg_l), min = 0, max = 0.001), doc_stream_mg_l),
+         doc_cat = factor(Hmisc::cut2(doc_stream_mg_l, g = 8, ties.method = "min"), labels = qlabel),
          sto_fct = as.factor(stream_order),
          forest_scp_3 = w_forest_scp + w_water_scp,
          humans_scp_3 = w_human_scp,
          shrubl_scp_3 = w_shrub_scp + w_grass_scp + w_barren_scp) %>% 
   ungroup() %>% 
   mutate(basin_cat = as.factor(if_else(basin == "yakima",
-                                       "Yakima River (drier)",
-                                       "Willamette River (wetter)")))
+                                       "Yakima River (Dry)",
+                                       "Willamette River (Wet)")))
+
+
+
+
+
