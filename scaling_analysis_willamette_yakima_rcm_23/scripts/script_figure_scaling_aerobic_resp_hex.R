@@ -14,7 +14,7 @@ rm()
 cat(readLines("./metadata/code_instructions.Rmd"),sep = '\n')
 
 # Plot settings
-source("./scripts/script_graphic_prep_design.R")
+source("./source/script_graphic_prep_design.R")
 
 # Figure
 cumulative_ab_resp_hex <- ggplot(data = scaling_analysis_dat,
@@ -118,14 +118,16 @@ ggsave(paste(results_png, paste0("guerrero_etal_23_willamette_cumulative_ab_resp
 w_cumulative_ab_resp_hex_m <- ggMarginal(w_cumulative_ab_resp_hex,
                                          groupColour = TRUE,
                                          groupFill = TRUE,
-                                         xparams = list(bw=0.45),
-                                         yparams = list(bw=0.45))
+                                         xparams = list(bw=0.25),
+                                         yparams = list(bw=0.25))
 
 w_cumulative_ab_resp_hex_m
 
 
-# Willamette Cumulative aerobic respiration vs. watershed area (color-code: hyporheic exchange
+# Yakima Cumulative aerobic respiration vs. watershed area (color-code: hyporheic exchange
 # quantiles) and marginal densities
+
+librarian::shelf(ggdensity)
 
 y_cumulative_ab_resp_hex <- ggplot(data = filter(scaling_analysis_dat, basin == "yakima"),
                                    aes(x = wshd_area_km2,
@@ -139,6 +141,7 @@ y_cumulative_ab_resp_hex <- ggplot(data = filter(scaling_analysis_dat, basin == 
               fullrange = TRUE,
               inherit.aes = FALSE,
               color = "#d62670")+
+  # geom_hdr()+
   scale_x_log10(breaks = breaks, labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c, labels = trans_format("log10", math_format(10^.x))) +
   xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")")))) +
@@ -168,8 +171,8 @@ ggsave(paste(results_png, paste0("guerrero_etal_23_yakima_cumulative_ab_resp_hex
 y_cumulative_ab_resp_hex_m <- ggMarginal(y_cumulative_ab_resp_hex,
                                          groupColour = TRUE,
                                          groupFill = TRUE,
-                                         xparams = list(bw=0.45),
-                                         yparams = list(bw=0.45))
+                                         xparams = list(bw=0.25),
+                                         yparams = list(bw=0.25))
 
 y_cumulative_ab_resp_hex_m
 

@@ -13,7 +13,7 @@ rm()
 cat(readLines("./metadata/code_instructions.Rmd"),sep = '\n')
 
 # Plot settings
-source("./scripts/script_graphic_prep_design.R")
+source("./source/script_graphic_prep_design.R")
 
 # Marginal plots dissolved organic carbon
 
@@ -35,11 +35,9 @@ local_w_resp_rates_doc <- ggplot(data = filter(scaling_analysis_dat, basin == "w
   scale_color_manual(values = my_rcolors)+
   annotation_logticks(size = 0.75, sides = "tblr") +
   theme_httn+
-  theme(legend.position = c(0.925, 0.15),
-        legend.text = element_text(size = 18),
-        legend.title = element_text(size = 20),
-        plot.title = element_text(size = 16),
-        strip.text = element_text(size = 32, face = "bold"))
+  theme(legend.position = "none",
+        axis.title = element_blank(),
+        axis.text.x = element_blank())
 local_w_resp_rates_doc
 
 local_w_resp_rates_doc_m <- ggMarginal(local_w_resp_rates_doc,
@@ -66,8 +64,7 @@ local_y_resp_rates_doc <- ggplot(data = filter(scaling_analysis_dat, basin == "y
   theme(legend.position = c(0.925, 0.15),
         legend.text = element_text(size = 18),
         legend.title = element_text(size = 20),
-        plot.title = element_text(size = 16),
-        strip.text = element_text(size = 32, face = "bold"))
+        axis.title.y = element_blank())
 local_y_resp_rates_doc
 
 local_y_resp_rates_doc_m <- ggMarginal(local_y_resp_rates_doc,
