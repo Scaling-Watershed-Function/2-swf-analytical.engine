@@ -47,6 +47,7 @@ librarian::shelf(tidyverse,# for plotting
                  leaflet,#creating html widget maps
                  fedmatch,# customizable merge
                  svglite,#save plots as svg files (lighter?)
+                 ggthemes, #uploading different themes for plots
                  knitr,#compiling r-makrdown/quarto docs
                  nhdplusTools)#across the network calculation
 
