@@ -33,6 +33,9 @@ librarian::shelf(tidyverse,# for plotting
                  entropy,#Information theory calculations
                  GGally,#pair plots
                  ggExtra,#adding marginal distributions (does not work with facet_wrap)
+                 gridExtra,#allows to combine plots on a customizable grid
+                 gridtext,#allows you to add rich text to gridExtra plots
+                 grid,#allows you to add complex axis titles to gridExtra plots
                  ggdist,# potentially working with facet_wrap
                  scales,# manipulating log scales
                  stringr,# editing text
