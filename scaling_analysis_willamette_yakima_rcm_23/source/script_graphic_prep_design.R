@@ -104,6 +104,25 @@ my_rcolors <- c("#fff1f1","#ffd7d9","#ffb3b8","#fa4d56",
 my_mcolors <- c("#ffd6e8","#ffafd2","#ff7eb6","#ee5396",
                 "#d62670","#9f1853","#740937","#510224")
 
+#NLCD color palette
+set.seed(2703)
+
+# Landscape colors from nlcd color scale
+nlcd_colors_c <- c("#5475a8","#f00f00","#d2cdc0","#38814e","#dcca8f","#fbf65d")
+nlcd_colors_w <- c("#5475a8","#f00f00","#d2cdc0","#38814e","#dcca8f","#fbf65d")
+
+# Source: https://github.com/BuzzFeedNews/us-land-cover/blob/master/nlcd_legend.csv
+
+# NLDC Categories
+nlcd_cat_c <- c("c_water_scp","c_human_scp","c_barren_scp","c_forest_scp","c_shrub_scp","c_grass_scp")
+nlcd_cat_w <- c("w_water_scp","w_human_scp","w_barren_scp","w_forest_scp","w_shrub_scp","w_grass_scp")
+
+# Assigning names to a color scale
+names(nlcd_colors_c) <- nlcd_cat_c
+names(nlcd_colors_w) <- nlcd_cat_w
+
+
+
 ################################################################################
 
 #Kernel density estimation function: bandwidth for density plots
@@ -137,7 +156,8 @@ scaling_analysis_dat <- read_csv(paste(local_data,"rcm_23_model_data.csv",sep = 
          sto_fct = as.factor(stream_order),
          forest_scp_3 = w_forest_scp + w_water_scp,
          humans_scp_3 = w_human_scp,
-         shrubl_scp_3 = w_shrub_scp + w_grass_scp + w_barren_scp) %>% 
+         shrubl_scp_3 = w_shrub_scp + w_grass_scp + w_barren_scp,
+         frst_cat = factor(Hmisc::cut2(forest_scp_3 , g = 8),labels = qlabel)) %>% 
   ungroup() %>% 
   mutate(basin_cat = as.factor(if_else(basin == "yakima",
                                        "Yakima River (Dry)",
