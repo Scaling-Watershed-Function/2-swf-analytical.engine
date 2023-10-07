@@ -14,6 +14,8 @@ cat(readLines("./metadata/code_instructions.Rmd"),sep = '\n')
 # Plot settings
 source("./source/script_graphic_prep_design.R")
 
+librarian::shelf(wesanderson)
+
 # Marginal plots hyporheic exchange
 
 # Willamette
@@ -30,7 +32,7 @@ local_w_resp_rates_doc <- ggplot(data = filter(scaling_analysis_dat, basin == "w
                 labels = trans_format("log10", math_format(10^.x)),
                 limits = c(0.0000001,1000)) +
   scale_color_manual(name = expression(bold(paste("Dissolved \norganic \ncarbon (mg/l) \nquantiles"))),
-                     values = my_rcolors)+
+                     values = wes_palette("Zissou1", 8, type = "continuous"))+
   annotation_logticks(size = 0.75, sides = "tblr") +
   annotate(geom="text",
            x=75,
@@ -50,9 +52,10 @@ local_w_resp_rates_doc <- ggplot(data = filter(scaling_analysis_dat, basin == "w
         plot.title = element_text(size = 32, face ="bold"))
 local_w_resp_rates_doc
 
-# Create a separate boxplot
-w_boxplot_plot <- ggplot(data = filter(scaling_analysis_dat, basin == "willamette"), 
-                         aes(x = reorder(doc_cat, -totco2_o2g_m2_day, FUN = median, descending = TRUE), 
+
+#Create a separate boxplot
+w_boxplot_plot <- ggplot(data = filter(scaling_analysis_dat, basin == "willamette"),
+                         aes(x =doc_cat,
                              y = totco2_o2g_m2_day,
                              color = doc_cat,
                              fill = doc_cat)) +
@@ -60,8 +63,8 @@ w_boxplot_plot <- ggplot(data = filter(scaling_analysis_dat, basin == "willamett
   xlab("Category") +
   ylab("Respiration") +
   scale_y_log10(limits = c(0.0000001,1000))+
-  scale_color_manual(values = my_rcolors)+
-  scale_fill_manual(values = my_rcolors)+
+  scale_color_manual(values = wes_palette("Zissou1", 8, type = "continuous"))+
+  scale_fill_manual(values = wes_palette("Zissou1", 8, type = "continuous"))+
   theme_minimal()+
   theme(axis.title = element_blank(),
         axis.text = element_blank(),
@@ -89,7 +92,8 @@ local_y_resp_rates_doc <- ggplot(data = filter(scaling_analysis_dat, basin == "y
   scale_y_log10(breaks = breaks_c,
                 labels = trans_format("log10", math_format(10^.x)),
                 limits = c(0.0000001,1000)) +
-  scale_color_manual(values = my_rcolors)+
+  scale_color_manual(name = expression(bold(paste("Dissolved \norganic \ncarbon (mg/l) \nquantiles"))),
+                     values = wes_palette("Zissou1", 8, type = "continuous"))+
   annotation_logticks(size = 0.75, sides = "tblr") +
   annotate(geom="text",
            x=75,
@@ -108,7 +112,7 @@ local_y_resp_rates_doc
 
 # Create a separate boxplot
 y_boxplot_plot <- ggplot(data = filter(scaling_analysis_dat, basin == "yakima"), 
-                         aes(x = reorder(doc_cat, -totco2_o2g_m2_day, FUN = median, descending = TRUE), 
+                         aes(x = doc_cat, 
                              y = totco2_o2g_m2_day,
                              color = doc_cat,
                              fill = doc_cat)) +
@@ -116,8 +120,8 @@ y_boxplot_plot <- ggplot(data = filter(scaling_analysis_dat, basin == "yakima"),
   xlab("Category") +
   ylab("Respiration") +
   scale_y_log10(limits = c(0.0000001,1000))+
-  scale_color_manual(values = my_rcolors)+
-  scale_fill_manual(values = my_rcolors)+
+  scale_color_manual(values = wes_palette("Zissou1", 8, type = "continuous"))+
+  scale_fill_manual(values = wes_palette("Zissou1", 8, type = "continuous"))+
   theme_minimal()+
   theme(axis.title = element_blank(),
         axis.text = element_blank(),
