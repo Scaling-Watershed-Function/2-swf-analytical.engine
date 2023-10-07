@@ -88,7 +88,7 @@ generate_lnd_plot <- function(data, accm_var, ylab_expression, wrap_col) {
 ylab_expression <-expression(bold(paste("Cumulative hyporheic exchange"," ","(", kg * d^-1 * km^-2, ")")))
 
 land_hex <- generate_lnd_plot(data = filter(landuse_scaling_dat,
-                                            fraction >90),
+                                            fraction <10),
                               accm_var = "accm_water_exchng_kg_day",
                               ylab_expression = ylab_expression,
                               wrap_col = 1)
