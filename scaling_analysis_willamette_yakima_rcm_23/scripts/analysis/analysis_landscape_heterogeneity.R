@@ -15,10 +15,23 @@
 #www.xquartz.org
 
 librarian::shelf(tidyverse,#(includes ggplot2, readr, dplyr, tidyr, and more...)
-                 entropy, usethis)
+                 entropy, usethis, GGally)
 
 set.seed(2703)
 
+# Data
+
+# Local data saving
+local_data <- "./data" 
+
+#  Local figure export
+results <- "./results" #For svg files that can be explored online
+
+results_png <- "/Users/guerrero-fj/Library/Mobile Documents/com~apple~CloudDocs/scaling_watershed_function/analytical_engine/scaling_analysis_willamette_yakima_23/results"
+
+# GitHub import
+wshd_lnd_dat <- filter(read_csv("https://raw.githubusercontent.com/Scaling-Watershed-Function/2-swf-analytical.engine/main/scaling_analysis_willamette_yakima_rcm_23/data/231008_land_use_cover_pnw.csv",
+                         show_col_types = FALSE), level == "watershed")
 
 ################################################################################
 # Reduced dimensionality -scapes
@@ -50,16 +63,13 @@ set.seed(2703)
 
 # We modify our initial data set accordingly
 
-wshd_inf_land_dat <- wshd_lnd_dat %>% 
+wshd_lnd_dat <- wshd_lnd_dat %>% 
   mutate(forest_scp =forest_evg + forest_dcd + forest_mxd,
          grass_scp = grass,
          shrub_scp = shrub,
          water_scp = snow + water + wetland_wood + wetland_herb,
          human_scp = pasture + crops + developed_op + developed_lw + developed_md +developed_hg,
-         barren_scp = barren)
-
-
-wshd_land_ent_dat <- wshd_inf_land_dat %>% 
+         barren_scp = barren) %>% 
   rowwise() %>% 
   mutate(ht = entropy(c(forest_scp,
                         grass_scp,
@@ -72,9 +82,52 @@ wshd_land_ent_dat <- wshd_inf_land_dat %>%
          hrel = ht/hmax) %>%
   ungroup()
 
-# We can further reduce dimensions by grouping categories into three groups: forest-scapes
-# will include water_scapes, shrubland-scapes could include grass_scapes and  (exploratory analysis
-# showed no difference between merging or not merging these landscapes together)
+# We can use entropy plots to assess the role of different variables in relation to 
+# changes en entropy
 
-write.csv(swf_land_ent_dat,paste(assets_processed,"230622_landscape_heterogeneity_pnw.csv",sep = '/'),
+wshd_ent_plot <- wshd_lnd_dat %>% 
+  select(20:29) %>%
+  gather(variable, value,-ht, -hmax, -basin, -hrel) %>%
+  ggplot(aes(x = value, y = hrel)) +
+  geom_point() +
+  facet_grid(rows = vars(basin), cols = vars(variable)) +
+  labs(x = NULL, y = NULL) +
+  theme_bw()
+wshd_ent_plot
+
+
+# Most of the changes in the entropy content can be traced with forest_scp, human_scp, 
+# and shrub_scp. Let's take a look at a approximated plot to downstream changes in 
+# entropy
+
+# Let's take a look at the relationship between categories
+
+pair_plot <- wshd_lnd_dat %>% 
+  select(basin,
+         forest_scp,
+         grass_scp,
+         shrub_scp,
+         water_scp,
+         human_scp,
+         barren_scp)
+
+
+# Create the paired plot
+pair_plot <- ggpairs(data = pair_plot, 
+                     aes(color = basin),
+                     columns = c("forest_scp", "grass_scp", "shrub_scp", 
+                                 "water_scp", "human_scp", "barren_scp"))
+
+# Print the paired plot
+print(pair_plot)
+
+plot_name <- paste0("guerrero_etal_23_landscape_correlations",".jpg")
+
+ggsave(paste(results_png,plot_name,sep = '/'),
+       width = 18,
+       height = 14,
+       units = "in")
+
+
+write.csv(wshd_lnd_dat,paste(local_data,"231008_landscape_heterogeneity_pnw.csv",sep = '/'),
           row.names = FALSE)
