@@ -79,8 +79,18 @@ wshd_lnd_dat <- wshd_lnd_dat %>%
                         barren_scp),
                       unit = "log2"),
          hmax = log(6,2),
-         hrel = ht/hmax) %>%
+         hrel = ht/hmax,
+         simpson_d = 1 - ((forest_scp/100)^2 + (grass_scp/100)^2 + (shrub_scp/100)^2+
+                               (water_scp/100)^2 + (human_scp/100)^2 + (barren_scp/100)^2),
+         simpson_d = ifelse(simpson_d<0,0,simpson_d)) %>%
   ungroup()
+
+p <- ggplot(data = wshd_lnd_dat,
+            aes(x = hrel,
+                y = simpson_d,
+                color = forest_scp))+
+  geom_point()
+p
 
 # We can use entropy plots to assess the role of different variables in relation to 
 # changes en entropy

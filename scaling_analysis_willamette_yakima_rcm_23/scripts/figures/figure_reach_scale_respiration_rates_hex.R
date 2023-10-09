@@ -20,20 +20,23 @@ source("./source/script_graphic_prep_design.R")
 # Willamette
 
 local_w_resp_rates_hex <- ggplot(data = filter(scaling_analysis_dat, basin == "willamette"),
-                               aes(x = ctch_area_km2,
+                               aes(x = wshd_area_km2,
                                    y = totco2_o2g_m2_day,
                                    color = hzt_cat))+
   geom_point(alpha = 0.75, size = 3.5)+
-  scale_x_log10(breaks = breaks, 
-                labels = trans_format("log10", math_format(10^.x)),
-                limits = c(0.001,150)) +
+  # geom_smooth()+
+  # scale_x_log10(breaks = breaks, 
+  #               labels = trans_format("log10", math_format(10^.x)),
+  #               limits = c(0.001,150)) +
+  scale_x_log10(breaks = breaks,
+                labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c,
                 labels = trans_format("log10", math_format(10^.x)),
                 limits = c(0.0000001,1000)) +
   scale_color_manual(name = expression(bold(paste("Hyporheic \nexchange \nflux (m/s) \nquantiles"))),values = my_dcolors)+
   annotation_logticks(size = 0.75, sides = "tblr") +
   annotate(geom="text",
-           x=75,
+           x=0.050,
            y=340,
            label='bold("A")',
            parse = TRUE,
@@ -79,20 +82,22 @@ w_combined_plot
 
 # Yakima
 local_y_resp_rates_hex <- ggplot(data = filter(scaling_analysis_dat, basin == "yakima"),
-                                 aes(x = ctch_area_km2,
+                                 aes(x = wshd_area_km2,
                                      y = totco2_o2g_m2_day,
                                      color = hzt_cat))+
   geom_point(alpha = 0.75, size = 3.5)+
-  scale_x_log10(breaks = breaks, 
-                labels = trans_format("log10", math_format(10^.x)),
-                limits = c(0.001,150)) +
+  # scale_x_log10(breaks = breaks, 
+  #               labels = trans_format("log10", math_format(10^.x)),
+  #               limits = c(0.001,150)) +
+  scale_x_log10(breaks = breaks,
+                labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c,
                 labels = trans_format("log10", math_format(10^.x)),
                 limits = c(0.0000001,1000)) +
   scale_color_manual(values = my_dcolors)+
   annotation_logticks(size = 0.75, sides = "tblr") +
   annotate(geom="text",
-           x=75,
+           x=0.050,
            y=340,
            label='bold("B")',
            parse = TRUE,
@@ -141,11 +146,11 @@ combined_plot <- grid.arrange(w_combined_plot,
                                               rot = 90,
                                               just = "centre",
                                               gp = gpar(col = "black", fontsize = 44)),
-                              bottom = textGrob(expression(bold(paste("Catchment area"," ","(", km^2, ")"))),
+                              bottom = textGrob(expression(bold(paste("Watershed area"," ","(", km^2, ")"))),
                                                 gp = gpar(col = "black", fontsize = 44)),
                               ncol=1)
 combined_plot
-ggsave(file=paste(results_png, paste0("guerrero_etal_23_local_ab_resp_wyrb_hex.png"),sep = '/'),
+ggsave(file=paste(results_png, paste0("guerrero_etal_23_local_ab_resp_wyrb_hex_wshd_area.png"),sep = '/'),
        combined_plot,
        width = 16,
        height = 24,
