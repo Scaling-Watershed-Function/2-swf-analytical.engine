@@ -48,7 +48,8 @@ rcm_23_model_dat <- rcm_23_model_output_dat %>%
                  water_scp,
                  barren_scp,
                  ht,
-                 hrel,),
+                 hrel,
+                 simpson_d),
         by = "comid",
         all.x = TRUE)
 
@@ -59,6 +60,7 @@ qlabel <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80+")
 scaling_analysis_dat <- rcm_23_model_dat %>% 
   group_by(basin) %>% 
   mutate(ent_cat = factor(Hmisc::cut2(hrel, g = 8),labels = qlabel),
+         smp_cat = factor(Hmisc::cut2(simpson_d, g = 8),labels = qlabel),
          rst_cat = factor(Hmisc::cut2(tot_rt_hz_s, g = 8),labels = qlabel),
          hzt_cat = factor(Hmisc::cut2(tot_q_hz_ms, g = 8),labels = qlabel),
          pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 8),labels = qlabel),
@@ -152,7 +154,7 @@ scaling_analysis_accm_dat <- scaling_analysis_dat %>%
                                                             toID = tocomid,
                                                             length = h_tot)))
 
-# Calculating entropy with a 3 classes space
+# Calculating entropy and simpson's D with a 3 classes space
 scaling_analysis_accm_dat <-  scaling_analysis_accm_dat %>% 
   rowwise() %>% 
   mutate(forest_3scp = forest_scp,
@@ -163,11 +165,13 @@ scaling_analysis_accm_dat <-  scaling_analysis_accm_dat %>%
                         human_3scp),
                         unit = "log2"),
          hmax_3 = log(3,2),
-         hrel_3 = ht_3/hmax_3) %>%
+         hrel_3 = ht_3/hmax_3,
+         simpson_d3 = 1 - ((forest_3scp/100)^2 + (shrub_3scp/100)^2 + (human_3scp/100)^2)) %>%
   ungroup() %>% 
   mutate(accm_hzt_cat = factor(Hmisc::cut2(accm_water_exchng_kg_d, g = 8),labels = qlabel),
          accm_ent_cat = factor(Hmisc::cut2(accm_ent_bytes, g = 8),labels = qlabel),
          hr3_cat = factor(Hmisc::cut2(hrel_3, g = 8),labels = qlabel),
+         smp3_cat = factor(Hmisc::cut2(simpson_d3, g = 8),labels = qlabel),
          frs3_cat = factor(Hmisc::cut2(forest_3scp, g = 8),labels = qlabel))
   
   write.csv(scaling_analysis_accm_dat,paste(local_data,"231008_scaling_analysis_dat.csv", sep = "/"),
