@@ -165,7 +165,9 @@ scaling_analysis_accm_dat <-  scaling_analysis_accm_dat %>%
          hmax_3 = log(3,2),
          hrel_3 = ht_3/hmax_3) %>%
   ungroup() %>% 
-  mutate(hr3_cat = factor(Hmisc::cut2(hrel_3, g = 8),labels = qlabel),
+  mutate(accm_hzt_cat = factor(Hmisc::cut2(accm_water_exchng_kg_d, g = 8),labels = qlabel),
+         accm_ent_cat = factor(Hmisc::cut2(accm_ent_bytes, g = 8),labels = qlabel),
+         hr3_cat = factor(Hmisc::cut2(hrel_3, g = 8),labels = qlabel),
          frs3_cat = factor(Hmisc::cut2(forest_3scp, g = 8),labels = qlabel))
   
   write.csv(scaling_analysis_accm_dat,paste(local_data,"231008_scaling_analysis_dat.csv", sep = "/"),

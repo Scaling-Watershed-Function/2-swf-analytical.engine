@@ -63,6 +63,12 @@ results <- "./results"
 
 results_png <- "/Users/guerrero-fj/Library/Mobile Documents/com~apple~CloudDocs/scaling_watershed_function/analytical_engine/scaling_analysis_willamette_yakima_23/results"
 
+##################################################################################
+# Loading data
+
+scaling_analysis_dat <- read_csv("https://raw.githubusercontent.com/Scaling-Watershed-Function/2-swf-analytical.engine/main/scaling_analysis_willamette_yakima_rcm_23/data/231008_scaling_analysis_dat.csv",
+                                 show_col_types = FALSE)
+
 ################################################################################
 # plot themeing
 
@@ -140,28 +146,8 @@ qlabel <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80+")
 names(my_dcolors) <- qlabel
 names(my_mcolors) <- qlabel
 
-scaling_analysis_dat <- read_csv(paste(local_data,"rcm_23_model_data.csv",sep = '/'),
-                                 show_col_types = FALSE) %>% 
-  group_by(basin) %>% 
-  mutate(ent_cat_w = factor(Hmisc::cut2(w_hrel, g = 8),labels = qlabel),
-         ent_cat_c = factor(Hmisc::cut2(c_hrel, g = 8),labels = qlabel),
-         rst_cat = factor(Hmisc::cut2(tot_rt_hz_s, g = 8),labels = qlabel),
-         hzt_cat = factor(Hmisc::cut2(tot_q_hz_ms, g = 8),labels = qlabel),
-         pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 8),labels = qlabel),
-         rnf_cat = factor(Hmisc::cut2(mean_ann_runf_mm, g = 8),labels = qlabel),
-         d50_cat = factor(Hmisc::cut2(d50_m, g = 8),labels = qlabel),
-         accm_hzt_cat = factor(Hmisc::cut2(accm_water_exchng_kg_day, g = 8),labels = qlabel),
-         doc_stream_mg_l = ifelse(basin == "yakima", doc_stream_mg_l + runif(length(doc_stream_mg_l), min = 0, max = 0.001), doc_stream_mg_l),
-         doc_cat = factor(Hmisc::cut2(doc_stream_mg_l, g = 8, ties.method = "min"), labels = qlabel),
-         sto_fct = as.factor(stream_order),
-         forest_scp_3 = w_forest_scp + w_water_scp,
-         humans_scp_3 = w_human_scp,
-         shrubl_scp_3 = w_shrub_scp + w_grass_scp + w_barren_scp,
-         frst_cat = factor(Hmisc::cut2(forest_scp_3 , g = 8),labels = qlabel)) %>% 
-  ungroup() %>% 
-  mutate(basin_cat = as.factor(if_else(basin == "yakima",
-                                       "Yakima River (Dry)",
-                                       "Willamette River (Wet)")))
+
+
 
 
 
