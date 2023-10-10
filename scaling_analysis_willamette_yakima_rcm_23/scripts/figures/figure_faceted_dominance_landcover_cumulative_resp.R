@@ -22,10 +22,14 @@ source("./source/script_graphic_prep_design.R")
 
 landuse_scaling_dat <- scaling_analysis_dat %>% 
   select(wshd_area_km2,
+         wshd_stream_dens,
+         wshd_basin_slope,
          basin,
          basin_cat,
          sto_fct,
          accm_hzt_cat,
+         mean_ann_flow_m3s,
+         mean_ann_temp_dc,
          ht_3,
          hrel_3,
          hr3_cat,
@@ -37,7 +41,11 @@ landuse_scaling_dat <- scaling_analysis_dat %>%
          forest_3scp,
          human_3scp,
          shrub_3scp,
-         accm_mean_ann_runf_mm) %>% 
+         accm_wshd_stream_dens,
+         accm_mean_ann_runf_mm,
+         accm_stream_area_m2,
+         no3_stream_mg_l,
+         accm_doc_load_kg_d) %>% 
   gather(c(forest_3scp,
            human_3scp,
            shrub_3scp),
@@ -54,33 +62,20 @@ landuse_scaling_dat <- scaling_analysis_dat %>%
                                                                               if_else(fraction < 30 & fraction > 20, "20%-Dominance",
                                                                                       ifelse(fraction < 20, "10%-Dominance",NA))))))))))
 
+
+
+
+
+land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
+land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
+land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
+land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
+land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
+land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
 land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
                                     aes(x = wshd_area_km2,
-                                        y = accm_totco2_o2g_day/wshd_area_km2,
-                                        color = use))+
-  geom_point(aes(alpha = fraction), size = 1.5)+
-  scale_x_log10(breaks = breaks, 
-                labels = trans_format("log10", math_format(10^.x)),
-                limits = c(0.01,30000)) +
-  scale_y_log10(breaks = breaks_c,
-                labels = trans_format("log10", math_format(10^.x)),
-                limits = c(0.001,500000)) +
-  scale_color_manual(name = "Land cover",
-                     values = c("#008837", "#FFC618", "#7b3294"),
-                     labels = c("Forestscapes", "Shrublandscapes", "Humanscapes")) +
-  xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")"))))+
-  ylab(expression(bold(paste("Cumulative aerobic"," ", respiration[Hyp],"(", gCO[2] * d^-1 * km^-2, ")"))))+
-  annotation_logticks(size = 0.75, sides = "tblr") +
-  guides(alpha = "none")+
-  facet_wrap(basin~dominance,nrow = 2)+
-  theme_httn+
-  theme(legend.position = "right",
-        strip.text = element_text(size = 20),
-        legend.text = element_text(size = 16),
-        legend.title = element_text(size = 18, face = "bold"))
-land_cover_dominance_plot
 ggsave(file=paste(results_png, paste0("guerrero_etal_23_cumulative_ab_resp_wyrb_dominance_80_10.png"),sep = '/'),
        land_cover_dominance_plot,
-       width = 24,
+       width = 12,
        height = 12,
        units = "in")

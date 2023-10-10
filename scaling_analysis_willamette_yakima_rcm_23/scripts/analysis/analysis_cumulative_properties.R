@@ -78,13 +78,15 @@ scaling_analysis_dat <- rcm_23_model_dat %>%
 scaling_analysis_dat <- scaling_analysis_dat %>% 
 group_by(basin) %>% 
   mutate(water_exchng_kg_d = tot_q_hz_ms*997*86400,
-         doc_load_kg_d = doc_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400) %>% 
+         doc_load_kg_d = doc_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400,
+         no3_load_kg_d = no3_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400) %>% 
   mutate(across(c(wshd_stream_dens,
                   mean_ann_pcpt_mm,
                   mean_ann_runf_mm,
                   stream_area_m2,
                   water_exchng_kg_d,
                   doc_load_kg_d,
+                  no3_load_kg_d,
                   totco2g_day,
                   totco2_o2g_day,
                   totco2_ang_day), ~ calculate_arbolate_sum(data.frame(ID = comid,
@@ -166,14 +168,21 @@ scaling_analysis_accm_dat <-  scaling_analysis_accm_dat %>%
                         unit = "log2"),
          hmax_3 = log(3,2),
          hrel_3 = ht_3/hmax_3,
-         simpson_d3 = 1 - ((forest_3scp/100)^2 + (shrub_3scp/100)^2 + (human_3scp/100)^2)) %>%
+         simpson_d3 = 1 - ((forest_3scp/100)^2 + (shrub_3scp/100)^2 + (human_3scp/100)^2),
+         forest_3_area_km2 = forest_3scp * wshd_area_km2,
+         shrub_3_area_km2 = shrub_3scp * wshd_area_km2,
+         human_3_area_km2 = human_3scp * wshd_area_km2 + runif(length(human_3scp), min = 0, max = 0.001)) %>%
   ungroup() %>% 
   mutate(accm_hzt_cat = factor(Hmisc::cut2(accm_water_exchng_kg_d, g = 8),labels = qlabel),
          accm_ent_cat = factor(Hmisc::cut2(accm_ent_bytes, g = 8),labels = qlabel),
+         forest_area_cat = factor(Hmisc::cut2(forest_3_area_km2, g = 8),labels = qlabel),
+         shrub_area_cat = factor(Hmisc::cut2(shrub_3_area_km2, g = 8),labels = qlabel),
+         human_area_cat = factor(Hmisc::cut2(human_3_area_km2, g = 8),labels = qlabel),
          hr3_cat = factor(Hmisc::cut2(hrel_3, g = 8),labels = qlabel),
          smp3_cat = factor(Hmisc::cut2(simpson_d3, g = 8),labels = qlabel),
          frs3_cat = factor(Hmisc::cut2(forest_3scp, g = 8),labels = qlabel))
-  
+
+
   write.csv(scaling_analysis_accm_dat,paste(local_data,"231008_scaling_analysis_dat.csv", sep = "/"),
             row.names = FALSE)
 

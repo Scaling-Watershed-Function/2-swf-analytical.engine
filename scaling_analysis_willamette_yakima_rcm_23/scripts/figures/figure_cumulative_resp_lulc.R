@@ -37,6 +37,10 @@ landuse_scaling_dat <- scaling_analysis_dat %>%
          forest_3scp,
          human_3scp,
          shrub_3scp,
+         simpson_d,
+         simpson_d3,
+         smp_cat,
+         smp3_cat,
          accm_mean_ann_runf_mm) %>% 
   gather(c(forest_3scp,
            human_3scp,
