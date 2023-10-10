@@ -23,6 +23,7 @@ accm_w_resp_rates_hex <- ggplot(data = filter(scaling_analysis_dat, basin == "wi
                                      y = accm_totco2_o2g_day/wshd_area_km2,
                                      color = accm_hzt_cat))+
   geom_point(alpha = 0.75, size = 3.5)+
+  geom_vline(xintercept = 10, linetype = "dashed", linewidth = 0.85)+
   scale_x_log10(breaks = breaks, 
                 labels = trans_format("log10", math_format(10^.x)),
                 limits = c(0.01,30000)) +
@@ -83,6 +84,7 @@ accm_y_resp_rates_hex <- ggplot(data = filter(scaling_analysis_dat, basin == "ya
                                      y = accm_totco2_o2g_day/wshd_area_km2,
                                      color = accm_hzt_cat))+
   geom_point(alpha = 0.75, size = 3.5)+
+  geom_vline(xintercept = 10, linetype = "dashed", linewidth = 0.85)+
   scale_x_log10(breaks = breaks, 
                 labels = trans_format("log10", math_format(10^.x)),
                 limits = c(0.01,30000)) +
