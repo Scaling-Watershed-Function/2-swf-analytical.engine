@@ -75,9 +75,10 @@ scaling_analysis_dat <- rcm_23_model_dat %>%
                                        "Willamette River (Wet)")))
 
 # Cumulative calculations
+
 scaling_analysis_dat <- scaling_analysis_dat %>% 
-group_by(basin) %>% 
-  mutate(water_exchng_kg_d = tot_q_hz_ms*997*86400,
+  group_by(basin) %>% 
+  mutate(water_exchng_kg_d = tot_q_hz_ms * 997 * 86400,
          doc_load_kg_d = doc_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400,
          no3_load_kg_d = no3_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400) %>% 
   mutate(across(c(wshd_stream_dens,
@@ -89,11 +90,21 @@ group_by(basin) %>%
                   no3_load_kg_d,
                   totco2g_day,
                   totco2_o2g_day,
-                  totco2_ang_day), ~ calculate_arbolate_sum(data.frame(ID = comid,
-                                                                       toID = tocomid,
-                                                                       length = .x))) %>% 
+                  totco2_ang_day), 
+                ~ if_else(stream_order == 1, ., calculate_arbolate_sum(data.frame(ID = comid, toID = tocomid, length = .)))) %>%
            set_names(paste0("accm_", names(select(., wshd_stream_dens:totco2_ang_day))))) %>% 
   ungroup()
+
+
+check_plot <- ggplot(data = filter(scaling_analysis_dat, stream_order<8),
+                     aes(x = totco2_o2g_day,
+                         y = accm_totco2_o2g_day))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  facet_wrap(~basin, ncol = 2)
+check_plot
+
 
 # Cumulative entropy
 
