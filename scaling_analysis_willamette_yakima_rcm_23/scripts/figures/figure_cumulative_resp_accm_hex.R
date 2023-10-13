@@ -18,6 +18,51 @@ source("./source/script_graphic_prep_design.R")
 source("./source/script_scaling_plots_insets.R")
 
 
+# Regresion per quantile category
+
+# Filter the data for the "willamette" basin
+willamette_data <- scaling_analysis_dat %>%
+  filter(basin == "willamette")
+
+# Create a new dataframe to store results
+results_df <- data.frame()
+
+# Create a list of unique values in accm_hzt_cat
+accm_hzt_cat_levels <- unique(willamette_data$accm_hzt_cat)
+
+for (level in accm_hzt_cat_levels) {
+  # Subset the data for the current accm_hzt_cat level within the "willamette" basin
+  subset_data <- willamette_data %>%
+    filter(accm_hzt_cat == level)
+  
+  # Perform log-linear regression
+  model <- lm(log(accm_totco2_o2g_day / wshd_area_km2) ~ log(wshd_area_km2), data = subset_data)
+  
+  # Get the slope and R-squared values
+  slope <- coef(model)[2]
+  r_squared <- summary(model)$r.squared
+  
+  # Create a data frame for the results
+  result_row <- data.frame(accm_hzt_cat = level, slope = slope, r_squared = r_squared)
+  
+  # Append the results to the main results dataframe
+  results_df <- bind_rows(results_df, result_row)
+}
+
+# Sort the data by descending R-squared
+sorted_results <- results_df %>%
+  arrange(desc(r_squared))
+
+# Remove row names
+final_sorted_results <- sorted_results %>%
+  rownames_to_column(var = "row") %>%
+  select(-row)
+
+# Print the final sorted results
+print(final_sorted_results)
+
+
+
 # Willamette River Basin
 w_plot_quant <- generate_plot(data = scaling_analysis_dat,
                             basin = "willamette",
@@ -79,23 +124,25 @@ ggsave(file=paste(results_png, paste0("guerrero_etal_23_cumulative_ab_resp_wyrb_
 
 # Willamette
 
+librarian::shelf(viridis)
+
 accm_w_resp_rates_hex <- ggplot(data = filter(scaling_analysis_dat, basin == "willamette"),
                                  aes(x = wshd_area_km2,
                                      y = accm_totco2_o2g_day/wshd_area_km2,
-                                     color = accm_hzt_cat))+
+                                     color = log(accm_water_exchng_kg_d/wshd_area_km2)))+
   geom_abline(slope = 1, linetype = "dashed", linewidth = 0.85)+
-  geom_point(alpha = 0.75, size = 3.5)+
-  geom_smooth(method = 'lm',
-              fullrange = TRUE)+
+  geom_point(alpha = 0.85,
+             size = 2.5)+
   scale_x_log10(breaks = breaks, 
                 labels = trans_format("log10", math_format(10^.x)),
                 limits = c(0.01,30000)) +
   scale_y_log10(breaks = breaks_c,
                 labels = trans_format("log10", math_format(10^.x)),
                 limits = c(0.001,500000)) +
-  scale_color_manual(name = expression(bold(paste("Cumulative \nhyporheic \nexchange\nquantiles"))),
-                     values = my_dcolors)+
   annotation_logticks(size = 0.75, sides = "tblr") +
+  scale_color_viridis(option = "viridis", 
+                      direction = -1,
+                      name = "A name")+
   annotate(geom="text",
            x=0.025,
            y=340000,
