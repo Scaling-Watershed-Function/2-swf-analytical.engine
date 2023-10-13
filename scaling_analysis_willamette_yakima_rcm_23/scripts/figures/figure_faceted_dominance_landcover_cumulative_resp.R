@@ -67,13 +67,31 @@ landuse_scaling_dat <- scaling_analysis_dat %>%
 
 
 land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
-land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
-land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
-land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
-land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
-land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
-land_cover_dominance_plot <- ggplot(data = filter(landuse_scaling_dat, dominance == "10%-Dominance" | dominance == "80%-Dominance"),
                                     aes(x = wshd_area_km2,
+                                        y = accm_totco2_o2g_day/wshd_area_km2,
+                                        color = use))+
+  geom_point(aes(alpha = fraction), size = 3.5)+
+  scale_x_log10(breaks = breaks, 
+                labels = trans_format("log10", math_format(10^.x)),
+                limits = c(0.01,30000)) +
+  scale_y_log10(breaks = breaks_c,
+                labels = trans_format("log10", math_format(10^.x)),
+                limits = c(0.001,500000)) +
+  scale_color_manual(name = "Land cover",
+                     values = c("#008837", "#FFC618", "#7b3294"),
+                     labels = c("Forestscapes", "Shrublandscapes", "Humanscapes")) +
+  annotation_logticks(size = 0.75, sides = "tblr") +
+  annotate(geom="text",
+           x=0.025,
+           y=340000,
+           label='bold("C")',
+           parse = TRUE,
+           color="black",
+           size = 14)+
+  facet_wrap(basin~dominance, ncol = 2)+
+  theme_httn
+land_cover_dominance_plot
+
 ggsave(file=paste(results_png, paste0("guerrero_etal_23_cumulative_ab_resp_wyrb_dominance_80_10.png"),sep = '/'),
        land_cover_dominance_plot,
        width = 12,
