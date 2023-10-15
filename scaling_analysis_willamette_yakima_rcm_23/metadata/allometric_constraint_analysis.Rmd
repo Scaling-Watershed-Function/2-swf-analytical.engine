@@ -1,0 +1,157 @@
+---
+title: "constraint_analysis"
+author: "Francisco J. Guerrero"
+date: "2023-10-14"
+output: html_document
+---
+
+# Analysis of Allometric Constraints in Hyporheic Respiration
+
+## 1. `estimate_constraint` Function
+
+
+### Overview
+
+The `estimate_constraint` function is designed to estimate constraints based on the distribution of a predictor variable (`x_col`) and its corresponding response variable (`y_col`).
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+### Function Sequence
+
+1. The predictor variable (`x_col`) undergoes a natural logarithmic transformation.
+
+```{r}
+x <- log(data[[x_col]])
+```
+
+2. A kernel density estimation is performed on the transformed predictor variable, utilizing the method of Sheather & Jones (1991) to select the bandwidth.
+
+```{r}
+bwf <- function(x) {bw.SJ(x)}
+kdensity <- density(x, bw = bwf(x))
+```
+
+3. Using the kernel density, a cumulative distribution function (CDF) is approximated.
+
+```{r}
+cdf <- approxfun(kdensity$x, cumsum(kdensity$y) / sum(kdensity$y))
+```
+
+4. X values corresponding to specific percentiles (from 5% to 95% in increments of 5%) of the transformed predictor's distribution are extracted.
+
+```{r}
+percentiles <- seq(0.05, 0.95, by = 0.05)
+```
+
+5. For each percentile range, the function subsets the data and calculates:
+    - The maximum of the response variable (`y_col`).
+    - The median of the response variable.
+    - The minimum of the response variable.
+    - The center value (back-transformed mean) of the log-transformed predictor variable.
+
+```{r}
+max_values_y <- numeric(length(x_values) - 1)
+median_values_y <- numeric(length(x_values) - 1)
+min_values_y <- numeric(length(x_values) - 1)
+center_values_x <- numeric(length(x_values) - 1)
+```
+
+6. The results are returned in a structured dataframe.
+
+```{r}
+results <- data.frame(
+    basin = unique(data$basin), 
+    center_values_x, 
+    max_values_y, 
+    median_values_y, 
+    min_values_y
+)
+```
+
+### Parameters
+
+- `data`: A dataframe containing the data to be analyzed.
+- `x_col`: Name of the predictor column.
+- `y_col`: Name of the response column.
+
+### Returns
+
+A dataframe containing:
+- `basin`: The unique identifier for data grouping (if the data is grouped).
+- `<x_col>_avg`: The center value (back-transformed mean) of the log-transformed predictor variable for each percentile range.
+- `<y_col>_Max`: The maximum of the response variable for each percentile range.
+- `<y_col>_Med`: The median of the response variable for each percentile range.
+- `<y_col>_Min`: The minimum of the response variable for each percentile range.
+
+### Usage
+
+Typically employed in combination with `group_by` and `do` for analyzing separate groups within a larger dataset.
+
+```{r}
+constraint_dat <- scaling_analysis_dat %>%
+  group_by(basin) %>%
+  do(estimate_constraint(., x_col = "wshd_area_km2", y_col = "accm_totco2_o2g_day"))
+```
+
+### Reference
+
+Sheather, S. J., & Jones, M. C. (1991). A reliable data-based bandwidth selection method for kernel density estimation. Journal of the Royal Statistical Society. Series B (Methodological), 683-690.
+
+
+## 2. `allometric_analysis` Function
+
+### 2.1 Purpose
+
+`allometric_analysis` offers an all-encompassing examination of allometric constraints in a dataset. Through combining kernel density estimation with bootstrapping, it paves the way for a rigorous analysis.
+
+### 2.2 Approach & Code Breakdown
+
+**Step 1: Resampling Data**
+
+Bootstrapping is harnessed to generate fresh samples from the main dataset.
+
+```{r}
+resampled_data <- data[sample(nrow(data), nrow(data), replace = TRUE), ]
+```
+
+**Step 2: Constraint Estimation**
+
+Every bootstrapped sample is processed via the `estimate_constraint` function to figure out constraints.
+
+```{r}
+results_df_resampled <- resampled_data %>% 
+  estimate_constraint(x_col = x_col, y_col = y_col)
+```
+
+**Step 3: Log-linear Regression**
+
+Post constraint derivation, a regression model is executed for the obtained constraints.
+
+```{r}
+response <- as.numeric(results_df_resampled[[y_col]]) / results_df_resampled[[paste0(x_col, "_avg")]]
+model <- lm(log(response) ~ log(results_df_resampled[[paste0(x_col, "_avg")]]))
+```
+
+**Step 4: Metrics Extraction**
+
+Prominent metrics, like slope and intercept, from the regression are extracted for further insights.
+
+```{r}
+intercept <- coef(model)[1]
+slope <- coef(model)[2]
+```
+
+### 2.3 Output
+
+The function returns a summary dataframe, delineating the mean values and confidence intervals for both slopes and intercepts across all the bootstrapped samples.
+
+### Method description: 
+
+### Identifying allometric constratins on hyporheic respiration
+
+Identifying scaling relationships directly from cumulative respiration and watershed area data is problematic due to the non-independent nature of the cumulative data. The non-independece arises from the nested structure of the stream network. Thus, scaling exponents and determination coeffients estimates from log-linear regression can be misleading ().  Furthermore, due to higher spatial heterogeneity at smaller scales, apparent slopes and intercepts extracted from the data may suggest multiple scaling relationships, which becomes even more problematic to test. Ideally, one would have cumulative respiration values estimated from non-nested watersheds to build a scaling relationship amenable to log-linear regression. This would be the analog to what is done in metabolic theory by scaling metabolism with body mass, with both estimated independently from different organisms of the same species or across species within a wide range of sizes.  Here, we focus on the constraints that watershed size may impose on cumulative hyporheic respiration (i.e. allometric constraint), in other words, what is the maximum cumulative hyporheic respiration that could be achieved as the watershed increases in size. To provide less biased estimates of scaling exponents, intercepts, and determination coefficients, we use a combination of kernel density estimation and bootstrapping to build quasi-independent datasets of cumulative hyporheic respiration and watershed area.  Using kernel density estimation, based on the method by Sheather & Jones (1991), we estimated the distribution of the transformed watershed area. From this, we constructed a cumulative distribution function (CDF). We then extracted watershed area values at percentiles from 5% to 95% in 5% steps. For each range of these values, we calculated the maximum, median, and minimum values of cumulative aerobic respiration. 
+
+
+

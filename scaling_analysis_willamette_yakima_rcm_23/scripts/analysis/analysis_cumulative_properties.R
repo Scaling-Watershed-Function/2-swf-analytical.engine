@@ -44,7 +44,7 @@ source("./source/script_cumulative_function_son_etal_22.R")
 rcm_23_model_dat <- rcm_23_model_output_dat %>% 
   merge(.,
         wshd_ent_dat %>% 
-          select(comid,
+          dplyr::select(comid,
                  forest_scp,
                  shrub_scp,
                  human_scp,
@@ -56,10 +56,6 @@ rcm_23_model_dat <- rcm_23_model_output_dat %>%
                  simpson_d),
         by = "comid",
         all.x = TRUE) 
-
-# Restricting first order streams to those with no further upstream watershed 
-# areas (i.e., headwaters)
-
 
 
 # Adding quantiles for key variables
@@ -75,6 +71,7 @@ scaling_analysis_dat <- rcm_23_model_dat %>%
          pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 10),labels = qlabel),
          rnf_cat = factor(Hmisc::cut2(mean_ann_runf_mm, g = 10),labels = qlabel),
          d50_cat = factor(Hmisc::cut2(d50_m, g = 10),labels = qlabel),
+         are_cat = factor(Hmisc::cut2(log(wshd_area_km2), g = 10),labels = qlabel),
          sto_fct = as.factor(stream_order)) %>% 
   ungroup() %>% 
   mutate(basin_cat = as.factor(if_else(basin == "yakima",
@@ -99,56 +96,9 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
                   totco2_o2g_day,
                   totco2_ang_day), 
                 ~ if_else(stream_order == 9, ., calculate_arbolate_sum(data.frame(ID = comid, toID = tocomid, length = .)))) %>%
-           set_names(paste0("accm_", names(select(., wshd_stream_dens:totco2_ang_day))))) %>% 
+           set_names(paste0("accm_", names(dplyr::select(., wshd_stream_dens:totco2_ang_day))))) %>% 
   ungroup()
 
-test_1 <- filter(scaling_analysis_dat, stream_order == 1 & wshd_area_km2 == ctch_area_km2)
-test_2 <- filter(scaling_analysis_dat, stream_order > 1)
-test_3 <- filter(scaling_analysis_dat, stream_order == 1 & wshd_area_km2 > ctch_area_km2)
-test_4 <- filter(scaling_analysis_dat, stream_order == 1 & 
-                   wshd_area_km2 < 25 & 
-                   stream_width_m <25 &
-                   reach_length_km <10)
-
-
-test_a <- rbind(test_1,test_2)
-test_b <- rbind(test_2,test_3)
-test_c <- rbind(test_2,test_4)
-
-
-test_a <- test_a %>% 
-  group_by(basin) %>% 
-  mutate(water_exchng_kg_d = tot_q_hz_ms * 997 * 86400,
-         doc_load_kg_d = doc_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400,
-         no3_load_kg_d = no3_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400) %>% 
-  mutate(across(c(wshd_stream_dens,
-                  mean_ann_pcpt_mm,
-                  mean_ann_runf_mm,
-                  stream_area_m2,
-                  water_exchng_kg_d,
-                  doc_load_kg_d,
-                  no3_load_kg_d,
-                  totco2g_day,
-                  totco2_o2g_day,
-                  totco2_ang_day), 
-                ~ if_else(stream_order == 9, ., calculate_arbolate_sum(data.frame(ID = comid, toID = tocomid, length = .)))) %>%
-           set_names(paste0("accm_", names(select(., wshd_stream_dens:totco2_ang_day))))) %>% 
-  ungroup()
-
-
-test_a_plot <- ggplot(data = test_a,
-                    aes(x = wshd_area_km2,
-                        y = accm_totco2_o2g_day/wshd_area_km2,
-                        color = log(accm_water_exchng_kg_d/wshd_area_km2)))+
-  geom_abline()+
-  geom_point()+
-  scale_x_log10()+
-  scale_y_log10()+
-  scale_color_viridis()+
-  facet_wrap(~basin,ncol = 2)+
-  theme(legend.position = "bottom",
-        legend.direction = "horizontal")
-test_a_plot
 
 # Cumulative entropy
 
