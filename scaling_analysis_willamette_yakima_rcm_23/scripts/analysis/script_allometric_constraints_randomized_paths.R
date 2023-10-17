@@ -20,7 +20,7 @@ librarian::shelf(tidyverse,
 # Local Import-Export
 shapes_data <- "../../1-swf-knowledge.base/datasets/raw_data/nsi_ssn_network/data"
 local_data <- "./data"
-source("./source/script_randomized_paths_allometric_constraints.R")
+source("./source/function_randomized_paths_allometry.R")
 
 
 pnw_rivers_dat <- st_transform(st_read(paste(shapes_data,
@@ -96,7 +96,7 @@ filtered_df <- extractFilteredPathOrderCombinations(resulting_paths)
 
 # Building a larger dataset by iteratively identifying non-overlapping paths and 
 # storing the data
-n_iterations <- 500  # Change this to the desired number of iterations
+n_iterations <- 20  # Change this to the desired number of iterations
 
 # Pre-allocate a list of the size we know we'll need
 all_results <- vector("list", n_iterations)
@@ -109,6 +109,8 @@ for (i in 1:n_iterations) {
 
 # Combine all the results using rbindlist (faster than rbind)
 compiled_results <- rbindlist(all_results)
+
+length(unique(compiled_results$comid))
 
 # Sort by basin
 setorder(compiled_results, basin)

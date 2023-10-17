@@ -1,4 +1,4 @@
-allometric_analysis <- function(data, x_col, y_col, n) {
+allometric_analysis_huc_12 <- function(data, x_col, y_col, n) {
   
   estimate_constraint <- function(data, x_col, y_col) {
     # Extract columns
@@ -50,6 +50,9 @@ allometric_analysis <- function(data, x_col, y_col, n) {
   for (i in 1:n) {
     # Resample data
     resampled_data <- data[sample(nrow(data), nrow(data), replace = TRUE), ]
+    
+    # Filter for distinct "huc_12" values
+    resampled_data <- resampled_data %>% distinct(huc_12, .keep_all = TRUE)
     
     # Obtain results_df for resampled data
     results_df_resampled <- estimate_constraint(resampled_data, x_col, y_col)
@@ -108,13 +111,5 @@ allometric_analysis <- function(data, x_col, y_col, n) {
   )
   return(summary_df)
 }
-
-
-# test_dat <- scaling_analysis_dat %>% 
-#   group_by(basin) %>% 
-#   do(allometric_analysis(., x_col = "wshd_area_km2",
-#                          y_col = "accm_totco2_o2g_day",
-#                          n = 10))
-
 
 
