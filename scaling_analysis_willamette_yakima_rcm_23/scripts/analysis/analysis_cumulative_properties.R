@@ -36,9 +36,6 @@ wshd_ent_dat <-read_csv("https://raw.githubusercontent.com/Scaling-Watershed-Fun
 rcm_23_model_output_dat <- read_csv("https://raw.githubusercontent.com/Scaling-Watershed-Function/2-swf-analytical.engine/main/scaling_analysis_willamette_yakima_rcm_23/data/rcm_23_model_output_data.csv",
                                     show_col_types = FALSE)
 
-# Cumulative function
-
-source("./source/script_cumulative_function_son_etal_22.R")
 
 # Merging datasets
 rcm_23_model_dat <- rcm_23_model_output_dat %>% 
@@ -98,6 +95,22 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
                 ~ if_else(stream_order == 9, ., calculate_arbolate_sum(data.frame(ID = comid, toID = tocomid, length = .)))) %>%
            set_names(paste0("accm_", names(dplyr::select(., wshd_stream_dens:totco2_ang_day))))) %>% 
   ungroup()
+
+
+p <- ggplot(data = scaling_analysis_dat,
+            aes(x = accm_mean_ann_pcpt_mm/wshd_area_km2,
+                y = wshd_basin_slope/wshd_area_km2,
+                color = log(accm_totco2_o2g_day/wshd_area_km2)))+
+  geom_vline(xintercept = 500)+
+  geom_hline(yintercept = 1)+
+  geom_point(alpha = 0.5)+
+  scale_x_log10()+
+  scale_y_log10()+
+  facet_wrap(~basin, ncol = 1)+
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal")
+p
+  
 
 
 # Cumulative entropy
