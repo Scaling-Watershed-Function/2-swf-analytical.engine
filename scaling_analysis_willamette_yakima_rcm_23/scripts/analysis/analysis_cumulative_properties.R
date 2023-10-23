@@ -79,11 +79,14 @@ scaling_analysis_dat <- rcm_23_model_dat %>%
 
 scaling_analysis_dat <- scaling_analysis_dat %>% 
   group_by(basin) %>% 
-  mutate(water_exchng_kg_d = tot_q_hz_ms * 997 * 86400,
+  mutate(water_exchng_kg_d = tot_q_hz_ms * stream_area_m2 * 997 * 86400,
          doc_load_kg_d = doc_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400,
-         no3_load_kg_d = no3_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400) %>% 
+         no3_load_kg_d = no3_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400,
+         mean_ann_pcpt_m3 = (mean_ann_pcpt_mm/1000)*wshd_area_km2*1000000) %>% 
   mutate(across(c(wshd_stream_dens,
+                  reach_length_km,
                   mean_ann_pcpt_mm,
+                  mean_ann_pcpt_m3,
                   mean_ann_runf_mm,
                   stream_area_m2,
                   water_exchng_kg_d,
@@ -95,22 +98,6 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
                 ~ if_else(stream_order == 9, ., calculate_arbolate_sum(data.frame(ID = comid, toID = tocomid, length = .)))) %>%
            set_names(paste0("accm_", names(dplyr::select(., wshd_stream_dens:totco2_ang_day))))) %>% 
   ungroup()
-
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = accm_mean_ann_pcpt_mm/wshd_area_km2,
-                y = wshd_basin_slope/wshd_area_km2,
-                color = log(accm_totco2_o2g_day/wshd_area_km2)))+
-  geom_vline(xintercept = 500)+
-  geom_hline(yintercept = 1)+
-  geom_point(alpha = 0.5)+
-  scale_x_log10()+
-  scale_y_log10()+
-  facet_wrap(~basin, ncol = 1)+
-  theme(legend.position = "bottom",
-        legend.direction = "horizontal")
-p
-  
 
 
 # Cumulative entropy
@@ -191,14 +178,14 @@ scaling_analysis_accm_dat <-  scaling_analysis_accm_dat %>%
          shrub_3_area_km2 = shrub_3scp * wshd_area_km2,
          human_3_area_km2 = human_3scp * wshd_area_km2 + runif(length(human_3scp), min = 0, max = 0.001)) %>%
   ungroup() %>% 
-  mutate(accm_hzt_cat = factor(Hmisc::cut2(accm_water_exchng_kg_d/wshd_area_km2, g = 8),labels = qlabel),
-         accm_ent_cat = factor(Hmisc::cut2(accm_ent_bytes, g = 8),labels = qlabel),
-         forest_area_cat = factor(Hmisc::cut2(forest_3_area_km2, g = 8),labels = qlabel),
-         shrub_area_cat = factor(Hmisc::cut2(shrub_3_area_km2, g = 8),labels = qlabel),
-         human_area_cat = factor(Hmisc::cut2(human_3_area_km2, g = 8),labels = qlabel),
-         hr3_cat = factor(Hmisc::cut2(hrel_3, g = 8),labels = qlabel),
-         smp3_cat = factor(Hmisc::cut2(simpson_d3, g = 8),labels = qlabel),
-         frs3_cat = factor(Hmisc::cut2(forest_3scp, g = 8),labels = qlabel))
+  mutate(accm_hzt_cat = factor(Hmisc::cut2(accm_water_exchng_kg_d/wshd_area_km2, g = 10),labels = qlabel),
+         accm_ent_cat = factor(Hmisc::cut2(accm_ent_bytes, g = 10),labels = qlabel),
+         forest_area_cat = factor(Hmisc::cut2(forest_3_area_km2, g = 10),labels = qlabel),
+         shrub_area_cat = factor(Hmisc::cut2(shrub_3_area_km2, g = 10),labels = qlabel),
+         human_area_cat = factor(Hmisc::cut2(human_3_area_km2, g = 10),labels = qlabel),
+         hr3_cat = factor(Hmisc::cut2(hrel_3, g = 10),labels = qlabel),
+         smp3_cat = factor(Hmisc::cut2(simpson_d3, g = 10),labels = qlabel),
+         frs3_cat = factor(Hmisc::cut2(forest_3scp, g = 10),labels = qlabel))
 
 
   write.csv(scaling_analysis_accm_dat,paste(local_data,"231008_scaling_analysis_dat.csv", sep = "/"),

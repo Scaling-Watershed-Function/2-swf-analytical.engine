@@ -104,10 +104,30 @@ allometric_analysis <- function(data, x_col, y_col, n) {
                            quantile(regression_df$Intercept[grep("_min", rownames(regression_df))], 0.025)),
     Intercept_Upper_CI = c(quantile(regression_df$Intercept[grep("_max", rownames(regression_df))], 0.975),
                            quantile(regression_df$Intercept[grep("_med", rownames(regression_df))], 0.975),
-                           quantile(regression_df$Intercept[grep("_min", rownames(regression_df))], 0.975))
+                           quantile(regression_df$Intercept[grep("_min", rownames(regression_df))], 0.975)),
+    Avg_R_Squared = c(mean(regression_df$R_Squared[grep("_max", rownames(regression_df))]),
+                      mean(regression_df$R_Squared[grep("_med", rownames(regression_df))]),
+                      mean(regression_df$R_Squared[grep("_min", rownames(regression_df))])),
+    R_Squared_Lower_CI = c(quantile(regression_df$R_Squared[grep("_max", rownames(regression_df))], 0.025),
+                           quantile(regression_df$R_Squared[grep("_med", rownames(regression_df))], 0.025),
+                           quantile(regression_df$R_Squared[grep("_min", rownames(regression_df))], 0.025)),
+    R_Squared_Upper_CI = c(quantile(regression_df$R_Squared[grep("_max", rownames(regression_df))], 0.975),
+                           quantile(regression_df$R_Squared[grep("_med", rownames(regression_df))], 0.975),
+                           quantile(regression_df$R_Squared[grep("_min", rownames(regression_df))], 0.975)),
+    
+    Avg_RMSE = c(mean(regression_df$RMSE[grep("_max", rownames(regression_df))]),
+                 mean(regression_df$RMSE[grep("_med", rownames(regression_df))]),
+                 mean(regression_df$RMSE[grep("_min", rownames(regression_df))])),
+    RMSE_Lower_CI = c(quantile(regression_df$RMSE[grep("_max", rownames(regression_df))], 0.025),
+                      quantile(regression_df$RMSE[grep("_med", rownames(regression_df))], 0.025),
+                      quantile(regression_df$RMSE[grep("_min", rownames(regression_df))], 0.025)),
+    RMSE_Upper_CI = c(quantile(regression_df$RMSE[grep("_max", rownames(regression_df))], 0.975),
+                      quantile(regression_df$RMSE[grep("_med", rownames(regression_df))], 0.975),
+                      quantile(regression_df$RMSE[grep("_min", rownames(regression_df))], 0.975))
   )
   return(summary_df)
 }
+
 
 
 # test_dat <- scaling_analysis_dat %>% 

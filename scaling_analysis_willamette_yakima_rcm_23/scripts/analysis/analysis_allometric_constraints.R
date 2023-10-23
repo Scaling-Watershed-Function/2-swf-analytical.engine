@@ -92,7 +92,8 @@ constraint_all_paths_unique_huc_12_dat <- all_paths_unique_huc_12_dat %>%
 constraint_all_paths_unique_huc_12_dat$method =  "Bootstrap all paths unique HUC-12"
 
 # This dataset is too narrow and the analysis results in multiple warnings about
-# not enough data to make some calculations (i.e., not enough area range)
+# not enough data to make some calculations (i.e., not enough area range). It also
+# return errors due to multiple NAs in RMSE
 
 constraint_rand_paths_unique_huc_12_dat <- rand_paths_unique_huc_12_dat %>%
   group_by(basin) %>%
@@ -102,12 +103,11 @@ constraint_rand_paths_unique_huc_12_dat <- rand_paths_unique_huc_12_dat %>%
 constraint_rand_paths_unique_huc_12_dat$method =  "Bootstrap random paths unique HUC-12"
 
 # This dataset is too narrow and the analysis results in multiple warnings about
-# not enough data to make some calculations (i.e., not enough area range)
+# not enough data to make some calculations (i.e., not enough area range) It also
+# return errors due to multiple NAs in RMSE 
 
 constraints_results <- rbind(constraint_all_paths_huc_12,
-                             constraint_rand_paths_huc_12,
-                             constraint_all_paths_unique_huc_12_dat,
-                             constraint_rand_paths_unique_huc_12_dat) 
+                             constraint_rand_paths_huc_12) 
 
 colnames(constraints_results)=c("Basin",
                                  "Constraint",
@@ -117,6 +117,12 @@ colnames(constraints_results)=c("Basin",
                                  "Average intercept",
                                  "Intercept lower c.i.",
                                  "Intercept upper c.i.",
+                                 "Average R-Squared",
+                                 "R-Squared lower c.i.",
+                                 "R-Squared upper c.i.",
+                                 "Average R-Squared",
+                                 "R-Squared lower c.i.",
+                                 "R-Squared upper c.i.",
                                  "Bootstraping method")
 
 
