@@ -331,14 +331,6 @@ scaling_analysis_accm_dat <-  scaling_analysis_accm_dat %>%
          frs3_cat = factor(Hmisc::cut2(forest_3scp, g = 10),labels = qlabel))
 
 
-p <- ggplot(data = scaling_analysis_accm_dat,
-            aes(x = simpson_d3))+
-  geom_density(alpha = 0.5, bw =0.025)+
-  scale_color_viridis_d()+
-  scale_fill_viridis_d()+
-  facet_wrap(~basin,ncol=2)
-p
-
 
   write.csv(scaling_analysis_accm_dat,paste(local_data,"231008_scaling_analysis_dat.csv", sep = "/"),
             row.names = FALSE)
