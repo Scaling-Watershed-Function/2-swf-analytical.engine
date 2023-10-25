@@ -332,7 +332,7 @@ scaling_analysis_accm_dat <-  scaling_analysis_accm_dat %>%
 
 
 
-  write.csv(scaling_analysis_accm_dat,paste(local_data,"231008_scaling_analysis_dat.csv", sep = "/"),
+write.csv(scaling_analysis_accm_dat,paste(local_data,"231008_scaling_analysis_dat.csv", sep = "/"),
             row.names = FALSE)
 
   

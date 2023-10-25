@@ -1,0 +1,87 @@
+---
+title: "Local Respiration Rates Scaling Analysis"
+author: "Francisco J. Guerrero"
+date: "2023-10-25"
+output: html_document
+---
+
+## Introduction
+
+This document presents a linear regression analysis for the dataset `scaling_analysis_dat`. The primary goal is to understand the relationship between `totco2_o2g_m2_day` and `wshd_area_km2` for each level of `hzt_cat` within each `basin`.
+
+## Load Libraries
+
+```{r load-libraries, message=FALSE, eval=FALSE}
+# Loading the required libraries
+librarian::shelf(dplyr, tidyr, purrr, broom)
+```
+
+## Data Overview
+
+A brief overview of the dataset structure and its columns.
+
+```{r eval=FALSE}
+# Assuming the data is loaded in a variable called scaling_analysis_dat
+head(scaling_analysis_dat)
+str(scaling_analysis_dat)
+```
+
+## Data Splitting
+
+The dataset is split based on `basin` and `hzt_cat` to perform individual regressions for each combination.
+
+```{r eval=FALSE}
+split_data <- split(scaling_analysis_dat, list(scaling_analysis_dat$basin, scaling_analysis_dat$hzt_cat))
+str(split_data, max.level = 2)
+```
+
+## Regression Analysis Function
+
+Below is the function that performs the log-log linear regression analysis for each subset of the data.
+
+```{r eval=FALSE}
+local_rates_regressions <- function(data) {
+  
+  # Split data by basin and hzt_cat
+  split_data <- split(data, list(data$basin, data$hzt_cat))
+  
+  # Run linear regression for each subset and gather results
+  results <- map_dfr(split_data, ~{
+    
+    # Run the regression model
+    model <- lm(log(totco2_o2g_m2_day) ~ log(wshd_area_km2), data = .x)
+    tidy_result <- broom::tidy(model)
+    glance_result <- broom::glance(model)
+    
+    # Extract coefficients and stats using dplyr::filter
+    slope_data <- dplyr::filter(tidy_result, term == "log(wshd_area_km2)")
+    intercept_data <- dplyr::filter(tidy_result, term == "(Intercept)")
+    
+    slope <- ifelse(nrow(slope_data) > 0, slope_data$estimate, NA)
+    p_value <- ifelse(nrow(slope_data) > 0, slope_data$p.value, NA)
+    intercept <- ifelse(nrow(intercept_data) > 0, intercept_data$estimate, NA)
+    
+    tibble(
+      basin = unique(.x$basin),
+      hzt_cat = unique(.x$hzt_cat),
+      slope = slope,
+      intercept = intercept,
+      r_squared = glance_result$r.squared,
+      p_value = p_value
+    )
+  })
+  
+  return(results)
+}
+```
+
+### Running the Regression Analysis
+
+```{r eval=FALSE}
+results_df <- local_rates_regressions(scaling_analysis_dat)
+head(results_df)
+```
+
+## Summary
+
+To identify basin-scale trends in local respiration rates, we divided the dataset into subsets corresponding to quantiles of hzt_cat (hyporheic exchange). Each subset was further categorized based on individual basins. For each of these categorized subsets, a log-log linear regression was performed with totco2_o2g_m2_day as the dependent variable and wshd_area_km2 as the independent variable. This regression approach was chosen to linearize potential power-law relationships between the two variables, often observed in ecological datasets. The results of the regression provided the slope, intercept, r-squared, and p-value for each combination of basin and hzt_cat quantile. The slope from the regression can be interpreted as the elasticity of the respiration rate to changes in watershed area, offering insights into how respiration rates change with scale. The p-values determined the statistical significance of each relationship, ensuring that the identified trends were not due to random variation. This comprehensive methodological approach allowed for a nuanced understanding of how local respiration rates change across different scales and hyporheic exchange quantiles.

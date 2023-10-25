@@ -101,14 +101,27 @@ set.seed(2703)
 # Creating a quasi-sequential color palette for discrete categories
 # Source: https://www.ibm.com/design/language/color/
 
-my_dcolors <- c("#a6c8ff","#78a9ff","#4589ff","#0f62fe",
-                "#00539a","#003a6d","#012749","#061727")
+my_dcolors <- c("#dae6ff",
+                "#c0e2ff",
+                "#82cfff",
+                "#33b1ff",
+                "#1192e8",
+                "#0072c3",
+                "#00539a",
+                "#003a6d",
+                "#012749",
+                "#061727")
 
-my_rcolors <- c("#fff1f1","#ffd7d9","#ffb3b8","#fa4d56",
-                "#da1e28","#a2191f","#750e13","#2d0709")
-
-my_mcolors <- c("#ffd6e8","#ffafd2","#ff7eb6","#ee5396",
-                "#d62670","#9f1853","#740937","#510224")
+my_mcolors <- c("#fff0f7",
+                "#ffd6e8",
+                "#ffafd2",
+                "#ff7eb6",
+                "#ee5396",
+                "#d62670",
+                "#9f1853",
+                "#740937",
+                "#510224",
+                "#2a0a18")
 
 #NLCD color palette
 set.seed(2703)
@@ -127,8 +140,6 @@ nlcd_cat_w <- c("w_water_scp","w_human_scp","w_barren_scp","w_forest_scp","w_shr
 names(nlcd_colors_c) <- nlcd_cat_c
 names(nlcd_colors_w) <- nlcd_cat_w
 
-
-
 ################################################################################
 
 #Kernel density estimation function: bandwidth for density plots
@@ -140,7 +151,7 @@ bwf <- function(x){bw.SJ(x)}
 
 # https://stackoverflow.com/questions/46750635/cut-and-quantile-in-r-in-not-including-zero
 
-qlabel <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80+")
+qlabel <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80","Q90","Q100")
 
 # assigning names to color scale
 names(my_dcolors) <- qlabel

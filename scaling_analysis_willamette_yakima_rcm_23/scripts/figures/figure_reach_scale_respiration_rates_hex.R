@@ -13,7 +13,61 @@ rm()
 cat(readLines("./metadata/code_instructions.Rmd"),sep = '\n')
 
 # Plot settings
-source("./source/script_graphic_prep_design.R")
+source("./source/design_scaling_graphic_prep.R")
+
+# Side by side plots
+
+local_resp_rates_hex <- ggplot(data = scaling_analysis_dat %>% 
+                                 mutate(hzt_cat = factor(hzt_cat,
+                                                         levels = c("Q10","Q20","Q30","Q40","Q50",
+                                                                    "Q60","Q70","Q80","Q90","Q100"))),
+                                 aes(x = wshd_area_km2,
+                                     y = totco2_o2g_m2_day,
+                                     color = hzt_cat))+
+  facet_wrap(~basin_cat, ncol = 2)+
+  geom_smooth(method = "lm",
+              linewidth = 3.0)+
+  # geom_point(alpha = 0.75, size = 3.5)+
+  scale_x_log10(breaks = breaks,
+                labels = trans_format("log10", math_format(10^.x))) +
+  scale_y_log10(breaks = breaks_c,
+                labels = trans_format("log10", math_format(10^.x)),
+                limits = c(0.0000001,1000)) +
+  xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")"))))+
+  ylab(expression(bold(paste("Aerobic"," ", respiration[Hyp],"(", gCO[2] * d^-1 * m^-2, ")"))))+
+  scale_color_manual(name = expression(bold(paste("Hyporheic \nexchange \nflux (m/s) \nquantiles"))),values = my_dcolors)+
+  annotation_logticks(size = 0.75, sides = "tblr") +
+  geom_vline(xintercept = 1000, 
+             linewidth = 1.0, 
+             linetype = "dashed")+
+  theme_httn+
+  theme(legend.position = "none",
+        legend.title = element_text(size = 24, face = "bold"),
+        legend.text = element_text(size = 18),
+        axis.text = element_text(size = 32),
+        strip.text = element_text(size = 24, face = "bold", hjust = 0),
+        plot.margin = margin(0, 0, 0, 0, "cm"),
+        plot.title = element_text(size = 32, face ="bold"))
+local_resp_rates_hex
+ggsave(file=paste(results_png, paste0("guerrero_etal_23_local_ab_resp_wyrb_hex_lines_side_wshd_area.png"),sep = '/'),
+       local_resp_rates_hex,
+       width = 24,
+       height = 12,
+       units = "in")
+
+
+local_rates_mod <- lm(log(totco2_o2g_m2_day)~(log(wshd_area_km2)+hzt_cat)*basin,
+                      data = filter(scaling_analysis_dat,stream_order<6))
+summary(local_rates_mod)
+
+
+
+
+
+
+
+
+
 
 # Marginal plots hyporheic exchange
 
@@ -94,6 +148,8 @@ local_y_resp_rates_hex <- ggplot(data = filter(scaling_analysis_dat, basin == "y
   scale_y_log10(breaks = breaks_c,
                 labels = trans_format("log10", math_format(10^.x)),
                 limits = c(0.0000001,1000)) +
+  xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")"))))+
+  ylab()
   scale_color_manual(values = my_dcolors)+
   annotation_logticks(size = 0.75, sides = "tblr") +
   annotate(geom="text",
