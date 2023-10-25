@@ -33,18 +33,21 @@ scaling_analysis_dat <-read_csv("https://raw.githubusercontent.com/Scaling-Water
 
 
 correlation_data <- scaling_analysis_dat %>% 
-  select(basin, 
+  select(basin,
+         accm_totco2g_day,
          accm_water_exchng_kg_d,
          d50_m,
          mean_ann_runf_mm,
          mean_ann_flow_m3s,
          mean_ann_pcpt_mm) %>% 
-  mutate(log_accm_water_exchng_kg_d = log(accm_water_exchng_kg_d),
+  mutate(log_accm_totco2g_day = log(accm_totco2g_day),
+         log_accm_water_exchng_kg_d = log(accm_water_exchng_kg_d),
          log_d50_m = log(d50_m),
          log_mean_ann_runf_mm = log(mean_ann_runf_mm),
          log_mean_ann_flow_m3s = log(mean_ann_flow_m3s),
          log_mean_ann_pcpt_mm = log(mean_ann_pcpt_mm)) %>% 
   select(basin,
+         log_accm_totco2g_day,
          log_accm_water_exchng_kg_d,
          log_d50_m,
          log_mean_ann_runf_mm,
@@ -55,7 +58,7 @@ correlation_data <- scaling_analysis_dat %>%
 corr_mat_pearson <- ggpairs(data = correlation_data,
                             aes(color = basin,
                                 alpha = 0.5),
-                                c(2:6),
+                                c(2:7),
                             upper = list(continuous = wrap("cor",
                                                            method = "pearson")),
                             title = "Correlation matrix (Pearson)")
@@ -70,7 +73,7 @@ ggsave(paste(results_png,"correlation_matrix_pearson.png",sep = '/'),
 corr_mat_spearman <- ggpairs(data = correlation_data,
                             aes(color = basin,
                                 alpha = 0.5),
-                            c(2:6),
+                            c(2:7),
                             upper = list(continuous = wrap("cor",
                                                            method = "spearman",
                                                            exact = FALSE)),
@@ -81,3 +84,17 @@ ggsave(paste(results_png,"correlation_matrix_spearman.png",sep = '/'),
        height = 12,
        units = "in",
        dpi = 300)
+
+
+scaling_analysis_dat <- scaling_analysis_dat %>% 
+    mutate(accm_roughness = calculate_arbolate_sum(calculate_arbolate_sum(data.frame(ID = comid,
+                                                                                   toID = tocomid,
+                                                                                   length = roughness))))
+
+
+p <- ggplot(data = scaling_analysis_dat,
+            aes(x = roughness,
+                color = basin_cat))+
+  geom_density()+
+  scale_x_log10()
+p

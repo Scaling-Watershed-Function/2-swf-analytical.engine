@@ -89,6 +89,7 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
                   mean_ann_pcpt_m3,
                   mean_ann_runf_mm,
                   stream_area_m2,
+                  roughness,
                   water_exchng_kg_d,
                   doc_load_kg_d,
                   no3_load_kg_d,
@@ -155,6 +156,24 @@ p <- ggplot(data = scaling_analysis_dat,
   facet_wrap(~basin, ncol = 2)
 p
 
+p <- ggplot(data = scaling_analysis_dat,
+            aes(x = mean_ann_runf_mm/mean_ann_pcpt_mm,
+                color = basin_cat))+
+  geom_density()+
+  scale_x_log10()
+p
+
+
+p <- ggplot(data = scaling_analysis_dat,
+            aes(x = mean_ann_runf_mm/mean_ann_pcpt_mm,
+                y = d50_m))+
+  # geom_point()+
+  geom_density2d_filled()+
+  scale_x_log10()+
+  scale_y_log10()+
+  scale_color_viridis_d()+
+  facet_wrap(~basin_cat, ncol = 2, scales = "free_x")
+p
 
 
 p <- ggplot(data = scaling_analysis_dat,
