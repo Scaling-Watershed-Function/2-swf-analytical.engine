@@ -15,6 +15,22 @@ cat(readLines("./metadata/code_instructions.Rmd"),sep = '\n')
 # Plot settings
 source("./source/design_scaling_graphic_prep.R")
 
+p <- ggplot(data = scaling_analysis_dat,
+            aes(x = accm_totco2_o2g_day,
+                color = basin_cat))+
+  geom_density(alpha = 0.5, bw = 0.5)+
+  geom_density(data = scaling_analysis_dat,
+               aes(x = acm_resp_mx),
+               alpha = 0.5, bw = 0.5,
+               linetype = "dashed")+
+  scale_x_log10()+
+  facet_wrap(~basin, ncol = 2)
+p
+
+pm <- ggMarginal(p, type = "density", margins = "both")
+pm
+
+
 # Side by side plots
 
 local_resp_rates_hex <- ggplot(data = scaling_analysis_dat %>% 
