@@ -1,0 +1,118 @@
+---
+title: "Cumulative Properties Analysis"
+author: "Francisco J. Guerrero"
+date: "2023-10-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Grouping the data into quantiles for multiple variables
+
+
+```{r eval=FALSE}
+qlabel <- c("Q10","Q20","Q30","Q40","Q50","Q60","Q70","Q80","Q90","Q100")
+```
+This line creates a character vector, qlabel, containing ten quantile labels. These labels represent deciles, which are commonly used in statistical analysis to divide a dataset into ten equal parts based on the rank of data points.
+
+## Quantile assignation
+
+This is where most of the data transformation happens, and it's using the dplyr package, part of the tidyverse. The %>% operator is known as a "pipe" and is used to chain together sequential operations on a dataset.
+
+a. `group_by(basin)`:
+This groups the data by the basin column, so that subsequent operations can be applied within each unique basin group.
+
+b. `mutate(...)`:
+The mutate() function is used to create or modify columns in the data frame. Each argument inside the mutate() function creates a new column (or modifies an existing one).
+
+`factor(Hmisc::cut2(...))`:
+The cut2() function from the Hmisc package is used multiple times. This function divides a numeric variable into intervals, in this case, ten intervals (g = 10), representing deciles. These intervals are then labeled using the qlabel vector created earlier. This is done for multiple variables (hrel, simpson_d, etc.), creating categorical versions of these numeric variables divided into deciles.
+
+c. `ungroup()`:
+This removes the grouping set by the group_by(basin) function so that the following operations are applied to the entire dataset rather than within groups.
+
+d. `mutate(basin_cat = as.factor(if_else(...)))`:
+A new column, basin_cat, is created. The if_else() function checks each row's basin value. If the value is "yakima", it assigns "Yakima River (Dry)", otherwise, it assigns "Willamette River (Wet)". The as.factor() function ensures that this new column is treated as a categorical variable.
+
+
+### The code:
+
+```{r eval=FALSE}
+scaling_analysis_dat <- rcm_23_model_dat %>% 
+  group_by(basin) %>% 
+  mutate(ent_cat = factor(Hmisc::cut2(hrel, g = 10),labels = qlabel),
+         smp_cat = factor(Hmisc::cut2(simpson_d, g = 10),labels = qlabel),
+         rst_cat = factor(Hmisc::cut2(tot_rt_hz_s, g = 10),labels = qlabel),
+         hzt_cat = factor(Hmisc::cut2(tot_q_hz_ms, g = 10),labels = qlabel),
+         pct_cat = factor(Hmisc::cut2(mean_ann_pcpt_mm, g = 10),labels = qlabel),
+         rnf_cat = factor(Hmisc::cut2(mean_ann_runf_mm, g = 10),labels = qlabel),
+         d50_cat = factor(Hmisc::cut2(d50_m, g = 10),labels = qlabel),
+         are_cat = factor(Hmisc::cut2(log(wshd_area_km2), g = 10),labels = qlabel),
+         sto_fct = as.factor(stream_order)) %>% 
+  ungroup() %>% 
+  mutate(basin_cat = as.factor(if_else(basin == "yakima",
+                                       "Yakima River (Dry)",
+                                       "Willamette River (Wet)")))
+```
+
+To summarize, this chunk of code is primarily focused on data transformation. It divides several numeric variables in the dataset into deciles and labels them accordingly. It also categorizes the basin variable into two descriptive categories. The resulting transformed dataset is stored in the scaling_analysis_dat object.
+
+
+## Cumulative Calculations in the Dataset
+
+In this section, we'll delve into the cumulative calculations applied to the dataset.
+First, we need to modify some of these variables to be used in cumulative calculations. We need to transform fluxes and concentrations into loads, particularly water exchange, dissolved organic carbon (DOC) loads, NO3 loads, and precipitation across the river basin.
+
+### Basic Metrics for Cumulative Calculations
+
+
+```{r eval=FALSE}
+scaling_analysis_dat <- scaling_analysis_dat %>% 
+  group_by(basin) %>% 
+  mutate(water_exchng_kg_d = tot_q_hz_ms * stream_area_m2 * 997 * 86400,
+         doc_load_kg_d = doc_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400,
+         no3_load_kg_d = no3_stream_mg_l * stream_area_m2 * mean_ann_vel_ms * 86400,
+         mean_ann_pcpt_m3 = (mean_ann_pcpt_mm/1000)*wshd_area_km2*1000000)
+```
+
+
+In the chunk above:
+
+`water_exchng_kg_d`: Represents the daily water exchange in kilograms. It's calculated by multiplying the total water exchange rate (tot_q_hz_ms) by the stream area (stream_area_m2), the density of water (997 kg/m³), and the number of seconds in a day (86400).
+
+`doc_load_kg_d`: Represents the daily load of dissolved organic carbon (DOC) in kilograms. It's determined by multiplying the DOC concentration in the stream (doc_stream_mg_l) by the stream area (stream_area_m2), the mean annual velocity of the stream (mean_ann_vel_ms), and the number of seconds in a day (86400).
+
+`no3_load_kg_d`: Represents the daily NO3 load in kilograms. Calculated similarly to doc_load_kg_d.
+
+`mean_ann_pcpt_m3`: Represents the mean annual precipitation in cubic meters. It's derived by converting the mean annual precipitation from millimeters to meters (mean_ann_pcpt_mm/1000) and then multiplying by the watershed area (wshd_area_km2) converted to square meters.
+
+
+## Cumulative calculations for multiple variables: 
+
+```{r eval=FALSE}
+scaling_analysis_dat <- scaling_analysis_dat %>% 
+  mutate(across(c(wshd_stream_dens,
+                  reach_length_km,
+                  mean_ann_pcpt_mm,
+                  mean_ann_pcpt_m3,
+                  mean_ann_runf_mm,
+                  stream_area_m2,
+                  roughness,
+                  water_exchng_kg_d,
+                  doc_load_kg_d,
+                  no3_load_kg_d,
+                  totco2g_day,
+                  totco2_o2g_day,
+                  totco2_ang_day), 
+                ~ if_else(stream_order == 9, ., calculate_arbolate_sum(data.frame(ID = comid, toID = tocomid, length = .)))) %>%
+           set_names(paste0("accm_", names(dplyr::select(., wshd_stream_dens:totco2_ang_day))))) %>% 
+  ungroup()
+```
+
+In the chunk above:
+
+`across(...)`: The across function is used to apply the same operation across multiple columns. In this context, for each specified column, we're checking if the stream_order is 9. If true, we retain the original value; otherwise, we calculate the arbolate sum using the calculate_arbolate_sum function. The arbolate sum is a method used in hydrology to compute the sum of values upstream of a given point in a stream network.
+
+`set_names(...)`: After computing the above metrics, we rename the columns by prefixing them with "accm_". This helps in distinguishing these computed metrics from the original ones.

@@ -76,7 +76,6 @@ scaling_analysis_dat <- rcm_23_model_dat %>%
                                        "Willamette River (Wet)")))
 
 # Cumulative calculations
-
 scaling_analysis_dat <- scaling_analysis_dat %>% 
   group_by(basin) %>% 
   mutate(water_exchng_kg_d = tot_q_hz_ms * stream_area_m2 * 997 * 86400,
@@ -89,7 +88,6 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
                   mean_ann_pcpt_m3,
                   mean_ann_runf_mm,
                   stream_area_m2,
-                  roughness,
                   water_exchng_kg_d,
                   doc_load_kg_d,
                   no3_load_kg_d,
@@ -99,6 +97,10 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
                 ~ if_else(stream_order == 9, ., calculate_arbolate_sum(data.frame(ID = comid, toID = tocomid, length = .)))) %>%
            set_names(paste0("accm_", names(dplyr::select(., wshd_stream_dens:totco2_ang_day))))) %>% 
   ungroup()
+
+
+write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_dat_cumulative.csv", sep = "/"),
+          row.names = FALSE)
 
 scaling_analysis_dat <- scaling_analysis_dat %>% 
   mutate(acm_resp_mx = if_else(basin=="willamette",
@@ -111,156 +113,6 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
                                exp(9.80+log(wshd_area_km2)*0.44),
                                exp(9.55+log(wshd_area_km2)*0.43)))
 
-
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = wshd_area_km2,
-                y = accm_totco2_o2g_day/wshd_area_km2,
-                color = log(accm_water_exchng_kg_d/wshd_area_km2)))+
-  # geom_vline(xintercept = 500)+
-  # geom_hline(yintercept = 1)+
-  geom_point()+
-  scale_color_viridis_c()+
-  geom_line(data = scaling_analysis_dat,
-             aes(x = wshd_area_km2,
-                 y = acm_resp_mx),
-             color = "darkred")+
-  geom_line(data = scaling_analysis_dat,
-            aes(x = wshd_area_km2,
-                y = acm_resp_up),
-            color = "darkred",
-            linetype = "dashed")+
-  geom_line(data = scaling_analysis_dat,
-            aes(x = wshd_area_km2,
-                y = acm_resp_dw),
-            color = "darkred",
-            linetype = "dashed")+
-  # geom_density_2d_filled()+
-  scale_x_log10()+
-  scale_y_log10()+
-  # scale_color_viridis_d()+
-  facet_wrap(~basin,ncol = 2)
-p
-
-
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = d50_m,
-                color = d50_cat,
-                fill = d50_cat))+
-  geom_density(bw=0.10, 
-               alpha = 0.5)+
-  scale_x_log10()+
-  scale_color_viridis_d()+
-  scale_fill_viridis_d()+
-  facet_wrap(~basin, ncol = 2)
-p
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = mean_ann_runf_mm/mean_ann_pcpt_mm,
-                color = basin_cat))+
-  geom_density()+
-  scale_x_log10()
-p
-
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = mean_ann_runf_mm/mean_ann_pcpt_mm,
-                y = d50_m))+
-  # geom_point()+
-  geom_density2d_filled()+
-  scale_x_log10()+
-  scale_y_log10()+
-  scale_color_viridis_d()+
-  facet_wrap(~basin_cat, ncol = 2, scales = "free_x")
-p
-
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = mean_ann_runf_mm,
-                color = rnf_cat,
-                fill = rnf_cat))+
-  geom_density(bw=0.10, 
-               alpha = 0.5)+
-  scale_x_log10()+
-  scale_color_viridis_d()+
-  scale_fill_viridis_d()+
-  facet_wrap(~basin, ncol = 2)
-p
-
-
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = mean_ann_pcpt_mm,
-                color = pct_cat,
-                fill = pct_cat))+
-  geom_density(bw=0.10, 
-               alpha = 0.15)+
-  scale_x_log10(limits = c(50,5000))+
-  scale_color_viridis_d()+
-  scale_fill_viridis_d()+
-  facet_wrap(~basin, ncol = 2)
-p
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = shrub_scp))+
-  geom_density(color = "darkorange")+
-  geom_density(data = scaling_analysis_dat,
-               aes(x = forest_scp),
-               color = "green")+
-  geom_density(data = scaling_analysis_dat,
-               aes(x = human_scp),
-               color = "darkorchid")+
-  facet_wrap(~basin, ncol = 2)
-p
-
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = mean_ann_pcpt_mm,
-                y = d50_m,
-                color = as.factor(stream_order)))+
-  geom_point()+
-  scale_x_log10()+
-  scale_y_log10()+
-  scale_color_viridis_d()+
-  facet_wrap(~basin, ncol = 2, scales = "free_x")
-p
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = mean_ann_pcpt_mm,
-                y = d50_m,
-                color = log(accm_water_exchng_kg_d/wshd_area_km2)))+
-  geom_point()+
-  scale_x_log10()+
-  scale_y_log10()+
-  scale_color_viridis_c()+
-  facet_wrap(~basin, ncol = 2, scales = "free_x")
-p
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = wshd_area_km2,
-                y = accm_totco2_o2g_day/wshd_area_km2,
-                color = log(accm_water_exchng_kg_d/wshd_area_km2)))+
-  geom_point()+
-  geom_line(data = scaling_analysis_dat,
-            aes(x = wshd_area_km2,
-                y = acm_resp_mx),
-            color = "darkred")+
-  geom_line(data = scaling_analysis_dat,
-            aes(x = wshd_area_km2,
-                y = acm_resp_up),
-            color = "darkred",
-            linetype = "dashed")+
-  geom_line(data = scaling_analysis_dat,
-            aes(x = wshd_area_km2,
-                y = acm_resp_dw),
-            color = "darkred",
-            linetype = "dashed")+
-  scale_x_log10()+
-  scale_y_log10()+
-  scale_color_viridis_c()+
-  facet_wrap(~basin, ncol = 2, scales = "free_x")
-p
 
 # Cumulative entropy
 
@@ -286,7 +138,7 @@ p
 # when the observer goes beyond the first junction in the network. 
 
 
-associate_area <- function(input_df) {
+downstream_area <- function(input_df) {
   result_df <- input_df %>%
     group_by(basin) %>%
     mutate(
@@ -304,7 +156,7 @@ associate_area <- function(input_df) {
 }
 
 # Usage
-result <- associate_area(scaling_analysis_dat) 
+result <- downstream_area(scaling_analysis_dat) 
 
 
 # Calculating cumulative entropy
@@ -354,5 +206,5 @@ scaling_analysis_accm_dat <-  scaling_analysis_accm_dat %>%
 write.csv(scaling_analysis_accm_dat,paste(local_data,"231008_scaling_analysis_dat.csv", sep = "/"),
             row.names = FALSE)
 
-  
+
  

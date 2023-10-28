@@ -15,7 +15,7 @@
 #www.xquartz.org
 
 librarian::shelf(tidyverse,#(includes ggplot2, readr, dplyr, tidyr, and more...)
-                 entropy, usethis, GGally, nhdplusTools, gridExtra, ggExtra, data.table, viridis)
+                 entropy, usethis, GGally, nhdplusTools, gridExtra, ggExtra, data.table, viridis, ggtern)
 
 set.seed(2703)
 
@@ -86,15 +86,3 @@ ggsave(paste(results_png,"correlation_matrix_spearman.png",sep = '/'),
        dpi = 300)
 
 
-scaling_analysis_dat <- scaling_analysis_dat %>% 
-    mutate(accm_roughness = calculate_arbolate_sum(calculate_arbolate_sum(data.frame(ID = comid,
-                                                                                   toID = tocomid,
-                                                                                   length = roughness))))
-
-
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = roughness,
-                color = basin_cat))+
-  geom_density()+
-  scale_x_log10()
-p
