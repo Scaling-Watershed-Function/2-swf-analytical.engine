@@ -69,11 +69,24 @@ rand_paths_unique_huc_12_dat <- rand_paths_huc_12_dat %>%
 
 # Method 1 Resampling of scaling_analysis_dat and randomized paths and estimation of slopes and bootstrapped CI
 
+results <- all_paths_huc_12_dat %>%
+  group_by(basin) %>%
+  summarise(allometric_results = list(allometric_analysis(., 
+                                                          x_col = "wshd_area_km2",
+                                                          y_col = "accm_totco2_o2g_day",
+                                                          n = 500,
+                                                          best_iterations = TRUE)), 
+            .groups = 'drop')
+
+
+results$allometric_results[[2]]
+
 constraint_all_paths_huc_12 <- all_paths_huc_12_dat %>%
   group_by(basin) %>%
   do(allometric_analysis(., x_col = "wshd_area_km2",
                          y_col = "accm_totco2_o2g_day",
-                         n = 1000))
+                         n = 10,
+                         best_iterations = TRUE))
 constraint_all_paths_huc_12$method = "Bootstrap all paths"
 
 constraint_rand_paths_huc_12 <- rand_paths_huc_12_dat %>%

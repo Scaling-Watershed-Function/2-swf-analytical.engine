@@ -1,0 +1,160 @@
+---
+title: "path_randomization_analysis"
+author: "Francisco J. Guerrero"
+date: "2023-10-29"
+output: html_document
+---
+Absolutely, I'll integrate the code of the functions directly into the R Markdown format.
+
+---
+
+# Randomization of Stream Reaches Across Changing Flowpaths for Estimation of Allometric Constraints
+
+This code focuses on randomizing stream reaches based on changing flowpaths for the purpose of estimating allometric constraints.
+
+## Required Libraries
+
+1. `data.table` - Offers data manipulation capabilities with enhanced performance and syntax.
+2. `librarian` - Not directly used in the provided code but might be used in the broader context of the codebase.
+
+```{r setup}
+library(data.table)
+library(librarian)
+```
+
+## Functions
+
+### 1. `traceDownstream`
+
+#### Parameters:
+
+- `data`: A dataset containing stream information.
+- `n`: Number of random order 1 streams to consider for each basin.
+
+#### Description:
+
+The function starts by ensuring the input data is in the `data.table` format. The main logic loops over each unique basin (a geographical area drained by a stream) in the dataset.
+
+For each basin:
+1. It finds `n` random streams of order 1.
+2. For each of these streams, it traces a path downstream by following the `tocomid` of the current stream to find the next stream.
+3. The tracing stops if:
+   - The current stream has been used before in the same path (to prevent loops).
+   - There's no downstream.
+   - The stream order reaches one less than the maximum order in the basin.
+4. Each path gets a unique identifier (`path_number`).
+
+The result is a list of paths, each representing a series of connected streams.
+
+```{r traceDownstream}
+traceDownstream <- function(data, n) {
+  # Convert data to data.table if it's not already
+  if(!inherits(data, "data.table")) {
+    setDT(data)
+  }
+  
+  unique_basins <- unique(data$basin)
+  all_paths_list <- vector("list", length(unique_basins))
+  
+  path_counter <- 0 # Initialize a path counter for unique path numbers here
+  
+  for (j in seq_along(unique_basins)) {
+    basin = unique_basins[j]
+    basin_data <- data[basin == basin]
+    max_order_minus_one <- max(basin_data$stream_order) - 1
+    order1_streams <- basin_data[stream_order == 1]
+    
+    if(nrow(order1_streams) < n) {
+      stop("Number of first order streams is less than n for basin: ", basin)
+    }
+    
+    random_order1_streams <- order1_streams[sample(.N, n)]
+    paths_list <- vector("list", n)
+    
+    for(i in 1:n) {
+      path_counter <- path_counter + 1
+      current_comid <- random_order1_streams$comid[i]
+      path <- list()
+      path_used_comids <- integer()
+      
+      while(TRUE) {
+        current_stream <- basin_data[comid == current_comid]
+        if (current_stream$comid %in% path_used_comids || nrow(current_stream) == 0 || current_stream$stream_order == max_order_minus_one) {
+          break
+        }
+        path <- rbindlist(list(path, current_stream))
+        path_used_comids <- c(path_used_comids, current_stream$comid)
+        current_comid <- current_stream$tocomid
+      }
+      
+      path[, path_number := path_counter]
+      paths_list[[i]] <- path
+    }
+    
+    all_paths_list[[j]] <- rbindlist(paths_list)
+  }
+  
+  return(rbindlist(all_paths_list))
+}
+```
+
+### 2. `extractFilteredPathOrderCombinations`
+
+#### Parameters:
+
+- `paths`: A dataset containing traced paths (ideally the output from `traceDownstream`).
+
+#### Description:
+
+The function's objective is to extract specific combinations of paths and stream orders:
+
+1. For each unique basin:
+   - It identifies all unique path numbers.
+   - For each path:
+     - It selects the smallest available stream order that hasn't been chosen before.
+     - It then appends the data for that path and order to the result.
+2. The final result is sorted by basin.
+3. It extracts unique rows (based on basin, path number, and stream order) to ensure no duplication.
+
+The output gives an idea of which stream orders are present for each path in each basin, ensuring no stream order is used more than once across paths in the same basin.
+
+```{r extractFilteredPathOrderCombinations}
+extractFilteredPathOrderCombinations <- function(paths) {
+  unique_basins <- unique(paths$basin)
+  result <- list()
+  
+  for (basin in unique_basins) {
+    basin_data <- paths[basin == paths$basin]
+    unique_path_numbers <- unique(basin_data$path_number)
+    
+    used_orders <- integer(0)
+    for (path_num in unique_path_numbers) {
+      available_orders <- setdiff(unique(basin_data$stream_order), used_orders)
+      if (length(available_orders) == 0) break
+      chosen_order <- min(available_orders)
+      used_orders <- c(used_orders, chosen_order)
+      
+      path_data <- basin_data[path_number == path_num & stream_order == chosen_order]
+      result <- append(result, list(path_data))
+    }
+  }
+  result_df <- rbindlist(result)
+  setorder(result_df, basin)
+  unique_rows <- unique(result_df, by = c("basin", "path_number", "stream_order"))
+  
+  return(unique_rows)
+}
+```
+
+---
+
+## Key Concepts:
+
+- **Basin**: A geographical area drained by a stream. Each basin has multiple streams.
+- **Stream Order**: A hierarchical numbering system for streams. Order 1 streams are the smallest tributaries. When two order 1 streams combine, they form an order 2 stream, and so on.
+- **Comid**: A unique identifier for each stream segment.
+- **Tocomid**: Identifies the next downstream segment for a given stream segment.
+
+---
+
+Now, you should be able to copy this document directly into your R Markdown environment. If you have further questions or need additional details, let me know!
