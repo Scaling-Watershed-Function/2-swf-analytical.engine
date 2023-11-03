@@ -102,17 +102,6 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
 write.csv(scaling_analysis_dat,paste(local_data,"scaling_analysis_dat_cumulative.csv", sep = "/"),
           row.names = FALSE)
 
-scaling_analysis_dat <- scaling_analysis_dat %>% 
-  mutate(acm_resp_mx = if_else(basin=="willamette",
-                               exp(9.89+log(wshd_area_km2)*0.47),
-                               exp(9.64+log(wshd_area_km2)*0.46)),
-         acm_resp_up = if_else(basin=="willamette",
-                               exp(9.98+log(wshd_area_km2)*0.50),
-                               exp(9.72+log(wshd_area_km2)*0.49)),
-         acm_resp_dw = if_else(basin=="willamette",
-                               exp(9.80+log(wshd_area_km2)*0.44),
-                               exp(9.55+log(wshd_area_km2)*0.43)))
-
 
 # Cumulative entropy
 
