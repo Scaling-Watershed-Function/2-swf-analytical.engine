@@ -19,16 +19,60 @@ p <- ggplot(data = scaling_analysis_dat,
             aes(x = accm_totco2_o2g_day,
                 color = basin_cat))+
   geom_density(alpha = 0.5, bw = 0.5)+
-  geom_density(data = scaling_analysis_dat,
-               aes(x = acm_resp_mx),
-               alpha = 0.5, bw = 0.5,
-               linetype = "dashed")+
   scale_x_log10()+
   facet_wrap(~basin, ncol = 2)
 p
 
-pm <- ggMarginal(p, type = "density", margins = "both")
-pm
+
+
+# Side by side plots
+
+accm_resp_rates_hex <- ggplot(data = scaling_analysis_dat %>% 
+                                 mutate(accm_hzt_cat = factor(accm_hzt_cat,
+                                                         levels = c("Q10","Q20","Q30","Q40","Q50",
+                                                                    "Q60","Q70","Q80","Q90","Q100"))),
+                               aes(x = wshd_area_km2,
+                                   y = accm_totco2_o2g_day,
+                                   color = accm_hzt_cat))+
+  facet_wrap(~basin_cat, ncol = 2)+
+  # geom_smooth(method = "lm",
+  #             linewidth = 3.0)+
+  geom_point(alpha = 0.75, size = 3.5)+
+  scale_x_log10(breaks = breaks,
+                labels = trans_format("log10", math_format(10^.x))) +
+  scale_y_log10(breaks = breaks_c,
+                labels = trans_format("log10", math_format(10^.x))) +
+  xlab(expression(bold(paste("Watershed area"," ","(", km^2, ")"))))+
+  ylab(expression(bold(paste("Aerobic"," ", respiration[Hyp],"(", gCO[2] * d^-1 * m^-2, ")"))))+
+  scale_color_viridis_d(name = expression(bold(paste("Hyporheic \nexchange \nflux (m/s) \nquantiles"))))+
+  # scale_color_manual(name = expression(bold(paste("Hyporheic \nexchange \nflux (m/s) \nquantiles"))),values = my_dcolors)+
+  annotation_logticks(size = 0.75, sides = "tblr") +
+  geom_abline(intercept = 1.5, 
+             linewidth = 1.0, 
+             linetype = "dashed")+
+  theme_httn+
+  theme(legend.position = "right",
+        legend.title = element_text(size = 24, face = "bold"),
+        legend.text = element_text(size = 18),
+        axis.text = element_text(size = 32),
+        strip.text = element_text(size = 24, face = "bold", hjust = 0),
+        plot.margin = margin(0, 0, 0, 0, "cm"),
+        plot.title = element_text(size = 32, face ="bold"))
+accm_resp_rates_hex
+ggsave(file=paste(results_png, paste0("guerrero_etal_23_accm_ab_resp_wyrb_hex_lines_side_wshd_area.png"),sep = '/'),
+       local_resp_rates_hex,
+       width = 24,
+       height = 12,
+       units = "in")
+
+
+
+
+
+
+
+
+
 
 
 # Side by side plots
