@@ -230,3 +230,78 @@ write.csv(summary_df,paste(results,"guerrero_etal_23_scaling_exponents_boot_gls_
                         sep = '/'), row.names = TRUE)
 
 
+################################################################################
+# Model predictions across the whole dataset
+
+# 1. Importing model coefficients
+
+model_coeff <- read_csv(paste(results,"guerrero_etal_23_scaling_exponents_boot_gls_summary_confint.csv",
+                              sep = '/'), show_col_types = FALSE) %>% 
+  rename(term = ...1)
+
+# Extract mean coefficients from spc_tbl_
+# Note: Make sure that the column names match those in spc_tbl_
+mean_coefs <-model_coeff$Mean
+names(mean_coefs) <- model_coeff$term
+
+# 2. Subsetting models dat
+
+model_dat <- scaling_analysis_dat %>% 
+  select(basin,
+         accm_totco2_o2g_day,
+         wshd_area_km2,
+         accm_water_exchng_kg_d,
+         mean_ann_pcpt_mm,
+         wshd_max_elevation_m,
+         mean_ann_flow_m3s,
+         longitude,
+         latitude) %>% 
+  mutate(basin_num = ifelse(basin=="yakima",1,0))
+
+
+predictions <- model_dat %>%
+  mutate(
+    log_predicted_accm_totco2_o2g_day = mean_coefs['Intercept'] +
+      mean_coefs['wshd_area_km2'] * log(wshd_area_km2) +
+      mean_coefs['accm_water_exchng_kg_d'] * log(accm_water_exchng_kg_d/wshd_area_km2) +
+      mean_coefs['mean_ann_pcpt_mm'] * log(mean_ann_pcpt_mm) +
+      mean_coefs['wshd_max_elevation_m'] * log(wshd_max_elevation_m) +
+      mean_coefs['mean_ann_flow_m3s'] * log(mean_ann_flow_m3s) +
+      mean_coefs['basin'] *basin_num,
+    # Transform back from log scale if original model was logged
+    predicted_accm_totco2_o2g_day = exp(log_predicted_accm_totco2_o2g_day),
+    residuals = accm_totco2_o2g_day - predicted_accm_totco2_o2g_day
+  )
+
+# View the first few rows of the predictions
+head(predictions)
+
+
+# Estimated vs. Predicted:
+
+p <- ggplot(data = predictions,
+            aes(x = accm_totco2_o2g_day,
+                y = predicted_accm_totco2_o2g_day,
+                color = basin))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  geom_abline(linetype = "dashed")+
+  theme(legend.position = c(0.85, 0.15))
+p
+
+pm <- ggMarginal(p,type = "density", groupColour = TRUE, groupFill = TRUE)
+pm
+
+# residuals vs. location
+
+r <- ggplot(data = predictions, 
+            aes(x = longitude,
+                y = latitude,
+                color = log(abs(residuals))))+
+  scale_color_viridis_c()+
+  geom_point()+
+  facet_wrap(~basin, ncol = 2, scales = "free")
+r
+  
+
