@@ -295,7 +295,7 @@ pm
 
 # residuals vs. location
 
-r <- ggplot(data = predictions, 
+r <- ggplot(data = filter(predictions, log(abs(residuals)) > 15 ), 
             aes(x = longitude,
                 y = latitude,
                 color = log(abs(residuals))))+
