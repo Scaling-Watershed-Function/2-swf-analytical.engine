@@ -192,11 +192,14 @@ scaling_analysis_accm_dat <-  scaling_analysis_accm_dat %>%
 
 
 ggplot(data = scaling_analysis_accm_dat,
-            aes(x = longitude,
-                y = latitude,
+            aes(x = accm_inc_comid,
+                y = accm_totco2_o2g_day,
                 color = as.factor(stream_order)))+
   geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
   scale_color_viridis_d()+
+  geom_abline()+
   facet_wrap(~basin_cat, ncol = 2, scales = "free")
 
 

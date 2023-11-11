@@ -97,8 +97,13 @@ ggsave(paste(results_png,"correlation_matrix_pearson.png",sep = '/'),
        units = "in",
        dpi = 300)
 
+# Rank correlations (Spearman)
 
-corr_mat_spearman <- ggpairs(data = correlation_data,
+# Transform the numeric variables to ranks
+ranked_data <- correlation_data %>%
+  mutate(across(where(is.numeric), rank))
+
+corr_mat_spearman <- ggpairs(data = ranked_data,
                             aes(color = basin,
                                 alpha = 0.5),
                             c(2:12),
