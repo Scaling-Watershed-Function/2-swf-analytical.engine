@@ -94,8 +94,8 @@ scaling_analysis_dat <- scaling_analysis_dat %>%
                   totco2g_day,
                   totco2_o2g_day,
                   totco2_ang_day), 
-                ~ if_else(stream_order == 9, ., calculate_arbolate_sum(data.frame(ID = comid, toID = tocomid, length = .)))) %>%
-           set_names(paste0("accm_", names(dplyr::select(., wshd_stream_dens:totco2_ang_day))))) %>% 
+                ~ calculate_arbolate_sum(data.frame(ID = comid, toID = tocomid, length = .x)),
+                .names = "accm_{.col}")) %>%
   ungroup()
 
 
@@ -190,6 +190,14 @@ scaling_analysis_accm_dat <-  scaling_analysis_accm_dat %>%
          smp3_cat = factor(Hmisc::cut2(simpson_d3, g = 10),labels = qlabel),
          frs3_cat = factor(Hmisc::cut2(forest_3scp, g = 10),labels = qlabel))
 
+
+ggplot(data = scaling_analysis_accm_dat,
+            aes(x = longitude,
+                y = latitude,
+                color = as.factor(stream_order)))+
+  geom_point()+
+  scale_color_viridis_d()+
+  facet_wrap(~basin_cat, ncol = 2, scales = "free")
 
 
 write.csv(scaling_analysis_accm_dat,paste(local_data,"231008_scaling_analysis_dat.csv", sep = "/"),
