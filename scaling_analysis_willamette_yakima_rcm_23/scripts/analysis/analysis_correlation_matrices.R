@@ -34,6 +34,7 @@ scaling_analysis_dat <-read_csv("https://raw.githubusercontent.com/Scaling-Water
 
 correlation_data <- scaling_analysis_dat %>% 
   select(basin,
+         wshd_area_km2,
          mean_ann_pcpt_mm,
          wshd_max_elevation_m,
          wshd_min_elevation_m,
@@ -50,7 +51,9 @@ correlation_data <- scaling_analysis_dat %>%
          log_wshd_max_elev_m = log(wshd_max_elevation_m),
          log_wshd_min_elev_m = if_else(wshd_min_elevation_m == 0,
                                        log(0.0001),
-                                       log(wshd_min_elevation_m)),
+                                       if_else(wshd_min_elevation_m<0,
+                                               log(0.0001),
+                                               log(wshd_min_elevation_m))),
          log_mean_ann_runf_mm = log(mean_ann_runf_mm),
          log_mean_ann_flow_m3s = log(mean_ann_flow_m3s),
          log_forest_3scp = if_else(forest_3scp == 0,
@@ -67,8 +70,10 @@ correlation_data <- scaling_analysis_dat %>%
                              log(ht_3)),
          log_simpson_d3 =  if_else(simpson_d3 == 0,
                              log(0.0001),
-                             log(simpson_d3)),
-         log_accm_totco2_o2g_day = log(accm_totco2_o2g_day)) %>% 
+                             if_else(simpson_d3 < 0,
+                                     log(0.0001),
+                                     log(simpson_d3))),
+         log_accm_totco2_o2g_day_km2 = log(accm_totco2_o2g_day/wshd_area_km2)) %>% 
   select(basin,
          log_mean_ann_pcpt_mm,
          log_wshd_max_elev_m,
@@ -80,7 +85,10 @@ correlation_data <- scaling_analysis_dat %>%
          log_human_3scp,
          log_ht_3,
          log_simpson_d3,
-         log_accm_totco2_o2g_day)
+         log_accm_totco2_o2g_day_km2)
+
+
+summary(correlation_data)
   
 
 corr_mat_pearson <- ggpairs(data = correlation_data,
@@ -91,7 +99,7 @@ corr_mat_pearson <- ggpairs(data = correlation_data,
                                                            method = "pearson")),
                             title = "Correlation matrix (Pearson)")
 corr_mat_pearson
-ggsave(paste(results_png,"correlation_matrix_pearson.png",sep = '/'),
+ggsave(paste(results_png,"guerrero_etal_23_correlation_matrix_pearson_areal.png",sep = '/'),
        width = 20,
        height = 12,
        units = "in",
@@ -112,7 +120,7 @@ corr_mat_spearman <- ggpairs(data = ranked_data,
                                                            exact = FALSE)),
                             title = "Correlation matrix (Spearman)")
 corr_mat_spearman
-ggsave(paste(results_png,"correlation_matrix_spearman.png",sep = '/'),
+ggsave(paste(results_png,"guerrero_etal_23_correlation_matrix_spearman_areal.png",sep = '/'),
        width = 20,
        height = 12,
        units = "in",
