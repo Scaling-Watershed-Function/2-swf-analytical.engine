@@ -52,7 +52,9 @@ librarian::shelf(tidyverse,# for plotting
                  svglite,#save plots as svg files (lighter?)
                  ggthemes, #uploading different themes for plots
                  knitr,#compiling r-makrdown/quarto docs
-                 nhdplusTools)#across the network calculation
+                 nhdplusTools,#across the network calculation
+                 see,#rain cloud plots
+                 gghalves)#half-violin plots
 
 #################################################################################
 # file paths

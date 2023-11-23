@@ -15,24 +15,111 @@ cat(readLines("./metadata/code_instructions.Rmd"),sep = '\n')
 # Plot settings
 source("./source/design_scaling_graphic_prep.R")
 
-p <- ggplot(data = scaling_analysis_dat,
-            aes(x = accm_totco2_o2g_day,
-                color = basin_cat))+
-  geom_density(alpha = 0.5, bw = 0.5)+
-  scale_x_log10()+
-  facet_wrap(~basin, ncol = 2)
-p
-
-
-
 # Side by side plots
+local_co2_rates <- ggplot(data = scaling_analysis_dat,
+                         aes(x = as.factor(stream_order), 
+                             y = totco2_o2g_m2_day,
+                             fill = as.factor(stream_order))) +
+  geom_abline(linetype = "dashed",
+              intercept = -4)+
+  geom_half_violin(scale = "width",
+                   adjust = 1.5)+
+  scale_y_log10() +
+  scale_fill_brewer()+
+  facet_wrap(~basin_cat, ncol = 2)+
+  theme(legend.position = "none")
+local_co2_rates
 
-accm_resp_rates_hex <- ggplot(data = scaling_analysis_dat %>% 
+
+local_sa <- ggplot(data = scaling_analysis_dat,
+                         aes(x = as.factor(stream_order), 
+                             y = stream_area_m2,
+                             fill = as.factor(stream_order))) +
+  geom_abline(linetype = "dashed")+
+  geom_half_violin(scale = "width",
+                   adjust = 1.5)+
+  scale_y_log10() +
+  scale_fill_brewer()+
+  facet_wrap(~basin_cat, ncol = 2)+
+  theme(legend.position = "none")
+local_sa
+
+total_co2_mass <- ggplot(data = scaling_analysis_dat,
+                   aes(x = as.factor(stream_order), 
+                       y = totco2_o2g_day,
+                       fill = as.factor(stream_order))) +
+  geom_abline(linetype = "dashed")+
+  geom_half_violin(scale = "width",
+                   adjust = 1.5)+
+  scale_y_log10() +
+  scale_fill_brewer()+
+  facet_wrap(~basin_cat, ncol = 2)+
+  theme(legend.position = "none")
+total_co2_mass
+
+accm_co2_mass<- ggplot(data = scaling_analysis_dat,
+                         aes(x = as.factor(stream_order),
+                             y = accm_totco2_o2g_day,
+                             fill = as.factor(stream_order)))+
+  geom_abline(linetype = "dashed")+
+  geom_half_violin(scale = "width",
+                   adjust = 1.5)+
+  scale_y_log10()+
+  scale_fill_brewer()+
+  facet_wrap(~basin_cat, ncol = 2)
+accm_co2_mass
+
+
+
+
+
+ggplot(data = scaling_analysis_dat, aes(x = as.factor(stream_order), y = accm_totco2_o2g_day, fill = as.factor(stream_order))) +
+  # geom_half_violin(scale = "width",
+  #                  adjust = 1.5,
+  #                  side = "r")+
+  geom_half_boxplot(side = "r")+
+  gghalves::geom_half_point(
+    ## draw bar codes on the left
+    side = "l", 
+    ## draw horizontal lines instead of points
+    shape = 95,
+    ## remove jitter along x axis
+    range_scale = 0,
+    size = 5, 
+    alpha = .2
+  )+
+  scale_y_log10()+
+  geom_abline(intercept = 2.5)+
+  scale_fill_brewer()+
+  facet_wrap(~basin_cat, ncol = 2)
+
+
+
+
+ggplot(data = scaling_analysis_dat,
+       aes(x = as.factor(stream_order),
+           y = accm_totco2_o2g_day,
+           fill = as.factor(stream_order))) + 
+  geom_half_violin(scale = "width",
+                   adjust = 1.5
+  ) +
+  geom_point(
+    size = 1.5,
+    alpha = .05,
+    position = position_jitter(
+      seed = 1, width = .1
+    )
+  )+
+  scale_y_log10()
+
+
+
+local_co2_mass_hex <- ggplot(data = scaling_analysis_dat %>% 
                                  mutate(accm_hzt_cat = factor(accm_hzt_cat,
                                                          levels = c("Q10","Q20","Q30","Q40","Q50",
                                                                     "Q60","Q70","Q80","Q90","Q100"))),
                                aes(x = wshd_area_km2,
-                                   y = accm_totco2_o2g_day,
+                                   y = totco2_o2g_day,
                                    color = accm_hzt_cat))+
   facet_wrap(~basin_cat, ncol = 2)+
   # geom_smooth(method = "lm",
@@ -58,7 +145,7 @@ accm_resp_rates_hex <- ggplot(data = scaling_analysis_dat %>%
         strip.text = element_text(size = 24, face = "bold", hjust = 0),
         plot.margin = margin(0, 0, 0, 0, "cm"),
         plot.title = element_text(size = 32, face ="bold"))
-accm_resp_rates_hex
+local_co2_mass_hex
 ggsave(file=paste(results_png, paste0("guerrero_etal_23_accm_ab_resp_wyrb_hex_lines_side_wshd_area.png"),sep = '/'),
        local_resp_rates_hex,
        width = 24,
@@ -77,7 +164,7 @@ ggsave(file=paste(results_png, paste0("guerrero_etal_23_accm_ab_resp_wyrb_hex_li
 
 # Side by side plots
 
-local_resp_rates_hex <- ggplot(data = scaling_analysis_dat %>% 
+local_co2_mass_hex <- ggplot(data = scaling_analysis_dat %>% 
                                  mutate(hzt_cat = factor(hzt_cat,
                                                          levels = c("Q10","Q20","Q30","Q40","Q50",
                                                                     "Q60","Q70","Q80","Q90","Q100"))),
@@ -108,7 +195,7 @@ local_resp_rates_hex <- ggplot(data = scaling_analysis_dat %>%
         strip.text = element_text(size = 24, face = "bold", hjust = 0),
         plot.margin = margin(0, 0, 0, 0, "cm"),
         plot.title = element_text(size = 32, face ="bold"))
-local_resp_rates_hex
+local_co2_mass_hex
 ggsave(file=paste(results_png, paste0("guerrero_etal_23_local_ab_resp_wyrb_hex_lines_side_wshd_area.png"),sep = '/'),
        local_resp_rates_hex,
        width = 24,
