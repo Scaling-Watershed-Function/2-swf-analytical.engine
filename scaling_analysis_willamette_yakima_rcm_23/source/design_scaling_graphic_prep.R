@@ -125,6 +125,14 @@ my_mcolors <- c("#fff0f7",
                 "#510224",
                 "#2a0a18")
 
+my_scolors <- c("#82cfff",
+                "#33b1ff",
+                "#1192e8",
+                "#0072c3",
+                "#00539a",
+                "#003a6d",
+                "#012749")
+
 #NLCD color palette
 set.seed(2703)
 

@@ -15,102 +15,92 @@ cat(readLines("./metadata/code_instructions.Rmd"),sep = '\n')
 # Plot settings
 source("./source/design_scaling_graphic_prep.R")
 
-# Side by side plots
-local_co2_rates <- ggplot(data = scaling_analysis_dat,
-                         aes(x = as.factor(stream_order), 
-                             y = totco2_o2g_m2_day,
-                             fill = as.factor(stream_order))) +
-  geom_abline(linetype = "dashed",
-              intercept = -4)+
-  geom_half_violin(scale = "width",
-                   adjust = 1.5)+
-  scale_y_log10() +
-  scale_fill_brewer()+
-  facet_wrap(~basin_cat, ncol = 2)+
-  theme(legend.position = "none")
-local_co2_rates
+# Facet plots scaling relationships
 
+metric_labels <- function(metric) {
+  return(
+    c(
+      "totco2_o2g_m2_day" = "Total CO2 (g/m²/day)",
+      "stream_area_m2" = "Stream Area (m²)",
+      "totco2_o2g_day" = "Total CO2 (g/day)",
+      "accm_totco2_o2g_day" = "Accumulated CO2 (g/day)"
+    )[metric]
+  )
+}
 
-local_sa <- ggplot(data = scaling_analysis_dat,
-                         aes(x = as.factor(stream_order), 
-                             y = stream_area_m2,
-                             fill = as.factor(stream_order))) +
-  geom_abline(linetype = "dashed")+
-  geom_half_violin(scale = "width",
-                   adjust = 1.5)+
-  scale_y_log10() +
-  scale_fill_brewer()+
-  facet_wrap(~basin_cat, ncol = 2)+
-  theme(legend.position = "none")
-local_sa
-
-total_co2_mass <- ggplot(data = scaling_analysis_dat,
-                   aes(x = as.factor(stream_order), 
-                       y = totco2_o2g_day,
-                       fill = as.factor(stream_order))) +
-  geom_abline(linetype = "dashed")+
-  geom_half_violin(scale = "width",
-                   adjust = 1.5)+
-  scale_y_log10() +
-  scale_fill_brewer()+
-  facet_wrap(~basin_cat, ncol = 2)+
-  theme(legend.position = "none")
-total_co2_mass
-
-accm_co2_mass<- ggplot(data = scaling_analysis_dat,
-                         aes(x = as.factor(stream_order),
-                             y = accm_totco2_o2g_day,
-                             fill = as.factor(stream_order)))+
-  geom_abline(linetype = "dashed")+
-  geom_half_violin(scale = "width",
-                   adjust = 1.5)+
-  scale_y_log10()+
-  scale_fill_brewer()+
-  facet_wrap(~basin_cat, ncol = 2)
-accm_co2_mass
-
-
-
-
-
-ggplot(data = scaling_analysis_dat, aes(x = as.factor(stream_order), y = accm_totco2_o2g_day, fill = as.factor(stream_order))) +
-  # geom_half_violin(scale = "width",
-  #                  adjust = 1.5,
-  #                  side = "r")+
-  geom_half_boxplot(side = "r")+
+scaling_analysis_plot <- scaling_analysis_dat %>% 
+  select(
+         basin_cat,
+         stream_order,
+         totco2_o2g_m2_day,
+         stream_area_m2,
+         totco2_o2g_day,
+         accm_totco2_o2g_day
+         ) %>% 
+  gather(.,
+         key = "metric",
+         value = "value",
+         factor_key = TRUE,
+         c(3:6)
+         ) %>% 
+  ggplot(
+         aes(x = as.factor(stream_order),
+         y = value,
+         color = as.factor(stream_order),
+         fill = as.factor(stream_order))
+         )+
+  geom_half_violin(
+                   scale = "width",
+                   adjust = 1.5,
+                   side = "r",
+                   alpha = 0.75,
+                   trim = FALSE
+                   )+
+  geom_boxplot(
+               width = .2, 
+               alpha = .6, 
+               show.legend = FALSE,
+               color = "black"
+               ) +
   gghalves::geom_half_point(
-    ## draw bar codes on the left
     side = "l", 
-    ## draw horizontal lines instead of points
     shape = 95,
-    ## remove jitter along x axis
     range_scale = 0,
-    size = 5, 
+    size = 3, 
     alpha = .2
   )+
-  scale_y_log10()+
-  geom_abline(intercept = 2.5)+
-  scale_fill_brewer()+
-  facet_wrap(~basin_cat, ncol = 2)
-
-
-
-
-ggplot(data = scaling_analysis_dat,
-       aes(x = as.factor(stream_order),
-           y = accm_totco2_o2g_day,
-           fill = as.factor(stream_order))) + 
-  geom_half_violin(scale = "width",
-                   adjust = 1.5
-  ) +
-  geom_point(
-    size = 1.5,
-    alpha = .05,
-    position = position_jitter(
-      seed = 1, width = .1
-    )
+  scale_y_log10(
+    breaks = breaks_c,
+    labels = trans_format(
+      "log10", 
+      math_format(10^.x))
+    ) +
+  scale_color_manual(
+                    values = my_scolors
+    )+
+  guides(
+    color = "none"
   )+
-  scale_y_log10()
+  scale_fill_manual(
+                    values = my_scolors,
+                    name = "Stream order \n(Strahler)"
+                    )+
+  annotation_logticks(
+    size = 0.45, 
+    sides = "l"
+    ) +
+  facet_wrap(
+    ~ metric + basin_cat, 
+    ncol = 2,
+    scales = "free_y",
+    labeller = labeller(metric = metric_labels)
+             )
+scaling_analysis_plot
+
+
+
+
+
 
 
 
