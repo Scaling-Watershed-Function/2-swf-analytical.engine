@@ -30,14 +30,16 @@ reg_inset_plot <- function(selected_basin) {
     ) +
     geom_point(size = 4.5) +
     geom_hline(yintercept = c(1.0, 1.2, 0.8), color = 'black', linewidth = c(1.0, 0.5, 0.5), linetype = c("solid", "dashed", "dashed")) +
-    scale_y_continuous(limits = c(0.35, 1.7), breaks = c(0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6)) +
+    scale_y_continuous(limits = c(0.35, 1.7), breaks = c(0.5, 0.75, 1.0, 1.25, 1.50)) +
     scale_x_discrete(labels = c("10", "20", "30", "40", "50", "60", "70", "80", "90", "100")) +
     scale_color_manual(name = "Metric", values = c("#3F2145", "#996300")) +
-    labs(x = "Cumulative Hyp. Exchange (Quantiles)", y = "Values") +
+    labs(x = "Cumulative Hyp. Exchange \n(quantiles)", y = "Values") +
     ggtitle("Regression slopes and r-squared") +
     theme_httn +
-    theme(legend.position = "none",
-          axis.text = element_text(size = 16),
+    theme(legend.position = if(selected_basin == "willamette") c(.8,.2) else "none",
+          legend.title = element_blank(),
+          legend.text = element_text(size = 12),
+          axis.text = element_text(size = 14),
           axis.title = element_text(size = 14),
           panel.grid.major = element_line(colour = "gray", linetype = "dotted"),
           plot.margin = margin(0, 0, 0, 0, "cm"),

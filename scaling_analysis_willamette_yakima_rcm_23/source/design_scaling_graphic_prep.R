@@ -55,6 +55,7 @@ librarian::shelf(tidyverse,# for plotting
                  nhdplusTools,#across the network calculation
                  see,#rain cloud plots
                  ggplot2,#plotting
+                 patchwork,#organizing plots in a grid
                  gghalves)#half-violin plots
 
 #################################################################################

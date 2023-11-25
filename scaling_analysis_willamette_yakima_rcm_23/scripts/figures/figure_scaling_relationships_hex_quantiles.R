@@ -17,6 +17,8 @@ source("./source/design_scaling_graphic_prep.R")
 source("./source/function_base_scaling_plots.R")
 source("./source/function_regression_inset_plots.R")
 
+"/Users/franciscoj.guerrero/Library/Mobile Documents/com~apple~CloudDocs/scaling_watershed_function/analytical_engine/scaling_analysis_willamette_yakima_23"
+
 # Main Plots
 
 #Willamette
@@ -67,10 +69,10 @@ w_inset <- ggplotGrob(willamette_inset_plot)
 w_scaling_grob <- plot_willamette +
   annotation_custom(
     w_inset,
-    ymin = -3.5,
-    ymax = 2.0,
-    xmin = 2.2,
-    xmax = 4.35
+    ymin = 5.0,
+    ymax = 10.35,
+    xmin = -3.25,
+    xmax = 0.6
   )
 w_scaling_grob
 
@@ -85,18 +87,31 @@ y_inset <- ggplotGrob(yakima_inset_plot)
 y_scaling_grob <- plot_yakima +
   annotation_custom(
     y_inset,
-    ymin = -3.5,
-    ymax = 2.0,
-    xmin = 2.2,
-    xmax = 4.35
+    ymin = 5.0,
+    ymax = 10.35,
+    xmin = -3.25,
+    xmax = 0.6
   )
 y_scaling_grob
 
+# Align plots using patchwork
 
+# Combine the plots side by side
+aligned_plots <- w_scaling_grob + 
+  y_scaling_grob +
+  plot_layout(ncol = 2)
 
+# Add a common x-axis title using plot_annotation
+aligned_plots <- aligned_plots + 
+  plot_annotation(caption = expression(bold(paste("Watershed area (", km^2, ")"))),
+                  theme = theme(plot.caption = element_text(hjust = 0.525, face = "bold", size = 32)))
 
-ggsave(file=paste(results_png, paste0("guerrero_etal_23_local_ab_resp_wyrb_hex_lines_side_wshd_area.png"),sep = '/'),
-       local_resp_rates_hex,
+# Display aligned plots
+aligned_plots
+
+ggsave(file=paste(results_png,("guerrero_etal_23_scaling_results.png"),sep = '/'),
+       aligned_plots,
        width = 24,
        height = 12,
        units = "in")
+
