@@ -54,6 +54,7 @@ librarian::shelf(tidyverse,# for plotting
                  knitr,#compiling r-makrdown/quarto docs
                  nhdplusTools,#across the network calculation
                  see,#rain cloud plots
+                 ggplot2,#plotting
                  gghalves)#half-violin plots
 
 #################################################################################
