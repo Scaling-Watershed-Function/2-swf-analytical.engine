@@ -17,8 +17,6 @@ source("./source/design_scaling_graphic_prep.R")
 source("./source/function_base_scaling_plots.R")
 source("./source/function_regression_inset_plots.R")
 
-"/Users/franciscoj.guerrero/Library/Mobile Documents/com~apple~CloudDocs/scaling_watershed_function/analytical_engine/scaling_analysis_willamette_yakima_23"
-
 # Main Plots
 
 #Willamette
@@ -103,13 +101,21 @@ aligned_plots <- w_scaling_grob +
 
 # Add a common x-axis title using plot_annotation
 aligned_plots <- aligned_plots + 
-  plot_annotation(caption = expression(bold(paste("Watershed area (", km^2, ")"))),
-                  theme = theme(plot.caption = element_text(hjust = 0.525, face = "bold", size = 32)))
+  plot_annotation(
+    caption = expression(bold(paste("Watershed area (", km^2, ")"))),
+                  theme = theme(
+                    plot.caption = element_text(
+                      hjust = 0.525, 
+                      face = "bold", 
+                      size = 32)))
 
 # Display aligned plots
 aligned_plots
 
-ggsave(file=paste(results_png,("guerrero_etal_23_scaling_results.png"),sep = '/'),
+ggsave(file=paste(
+  results_png,
+  ("guerrero_etal_23_scaling_results.png"),
+  sep = '/'),
        aligned_plots,
        width = 24,
        height = 12,

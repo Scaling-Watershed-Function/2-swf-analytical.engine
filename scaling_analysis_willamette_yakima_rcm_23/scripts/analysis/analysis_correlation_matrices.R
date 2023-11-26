@@ -15,7 +15,14 @@
 #www.xquartz.org
 
 librarian::shelf(tidyverse,#(includes ggplot2, readr, dplyr, tidyr, and more...)
-                 entropy, usethis, GGally, nhdplusTools, gridExtra, ggExtra, data.table, viridis, ggtern)
+                 entropy, 
+                 usethis, 
+                 GGally, 
+                 nhdplusTools, 
+                 gridExtra, 
+                 ggExtra, 
+                 data.table, 
+                 viridis)
 
 set.seed(2703)
 
@@ -126,4 +133,10 @@ ggsave(paste(results_png,"guerrero_etal_23_correlation_matrix_spearman_areal.png
        units = "in",
        dpi = 300)
 
-
+write.csv(
+  correlation_data,
+  paste(local_data,
+        "guerrero_etal_23_correlation_analysis_dat.csv",
+        sep = '/'),
+  row.names = FALSE
+)
