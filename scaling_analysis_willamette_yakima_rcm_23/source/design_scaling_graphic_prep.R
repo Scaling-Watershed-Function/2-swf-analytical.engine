@@ -56,6 +56,7 @@ librarian::shelf(tidyverse,# for plotting
                  see,#rain cloud plots
                  ggplot2,#plotting
                  patchwork,#organizing plots in a grid
+                 colorspace,#to add different color palettes
                  gghalves)#half-violin plots
 
 #################################################################################
@@ -135,10 +136,10 @@ my_scolors <- c("#82cfff",
                 "#003a6d",
                 "#012749")
 
-my_rcolors <- c ("#82cfff",
-                 "#1192e8",
+my_rcolors <- c ("#33b1ff",
                  "#00539a",
-                 "#012749")
+                 "#ff7eb6",
+                 "#9f1853")
 
 #NLCD color palette
 set.seed(2703)
