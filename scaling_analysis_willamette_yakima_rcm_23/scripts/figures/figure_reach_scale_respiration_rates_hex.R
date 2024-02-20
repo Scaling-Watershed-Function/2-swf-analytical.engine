@@ -156,15 +156,18 @@ ggsave(file=paste(results_png, paste0("guerrero_etal_23_accm_ab_resp_wyrb_hex_li
 
 local_co2_mass_hex <- ggplot(data = scaling_analysis_dat %>% 
                                  mutate(hzt_cat = factor(hzt_cat,
-                                                         levels = c("Q10","Q20","Q30","Q40","Q50",
-                                                                    "Q60","Q70","Q80","Q90","Q100"))),
+                                                         levels = c("Q10","Q20",
+                                                                    "Q30","Q40",
+                                                                    "Q50","Q60",
+                                                                    "Q70","Q80",
+                                                                    "Q90","Q100"))),
                                  aes(x = wshd_area_km2,
                                      y = totco2_o2g_m2_day,
                                      color = hzt_cat))+
-  facet_wrap(~basin_cat, ncol = 2)+
-  geom_smooth(method = "lm",
-              linewidth = 3.0)+
-  # geom_point(alpha = 0.75, size = 3.5)+
+  facet_wrap(~basin_cat, nrow = 2)+
+  # geom_smooth(method = "lm",
+  #             linewidth = 3.0)+
+  geom_point(alpha = 0.75, size = 3.5)+
   scale_x_log10(breaks = breaks,
                 labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = breaks_c,
@@ -186,6 +189,8 @@ local_co2_mass_hex <- ggplot(data = scaling_analysis_dat %>%
         plot.margin = margin(0, 0, 0, 0, "cm"),
         plot.title = element_text(size = 32, face ="bold"))
 local_co2_mass_hex
+
+
 ggsave(file=paste(results_png, paste0("guerrero_etal_23_local_ab_resp_wyrb_hex_lines_side_wshd_area.png"),sep = '/'),
        local_resp_rates_hex,
        width = 24,
