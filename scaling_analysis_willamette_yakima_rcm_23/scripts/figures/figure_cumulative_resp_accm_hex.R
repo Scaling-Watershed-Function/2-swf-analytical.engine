@@ -12,10 +12,10 @@ rm()
 cat(readLines("./metadata/code_instructions.Rmd"),sep = '\n')
 
 # Plot settings
-source("./source/script_graphic_prep_design.R")
+source("./source/design_scaling_graphic_prep.R")
 
 # Figure function
-source("./source/script_scaling_plots_insets.R")
+source("./source/design_scaling_plots_insets.R")
 
 
 # Regresion per quantile category
@@ -110,14 +110,6 @@ ggsave(file=paste(results_png, paste0("guerrero_etal_23_cumulative_ab_resp_wyrb_
        width = 14,
        height = 24,
        units = "in")
-
-
-
-
-
-
-
-
 
 
 # Marginal plots hyporheic exchange
